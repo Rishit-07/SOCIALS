@@ -10,10 +10,15 @@ SOCIALS matches you with accountability partners and groups who share your exact
 Key Features
 
 🎯 Goal Matching — Post tasks or goals and get paired with like-minded individuals or groups pursuing the same target
+
 💬 Real-Time Chat — Stay connected with your accountability circle through instant messaging
+
 📈 Progress Tracking — Visualize your journey and celebrate milestones as a group
+
 🔥 Streaks — Build momentum with daily consistency tracking that keeps everyone on the hook
+
 🏆 Gamification — Earn badges, climb leaderboards, and turn discipline into something worth competing over
+
 🤝 Collaborative, Not Competitive — Unlike freelance platforms, there's no hiring or outsourcing — just people showing up for each other
 
 Who It's For
