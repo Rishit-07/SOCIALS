@@ -14,22 +14,32 @@ app.use(express.json())
 const server = http.createServer(app);
 const io = socket(server);
 
-app.get("/",(req,res)=>{
+app.get("/", (req, res) => {
     res.send("API is running...");
 });
 
-//----Connecting MongoDB----//
-mongoose.connect(process.env.MONGO_URI).then(()=>{
-    server.listen(process.env.PORT,()=>{
-        console.log(`Server is running on port ${process.env.PORT}`);
-    })
-}).catch((err)=>{
-    console.log(err);
-})
-
 //---Registering the routes---//
 const authRoutes = require("./routes/auth");
-app.use("/api/auth",authRoutes);
+app.use("/api/auth", authRoutes);
 
 const challengeRoutes = require("./routes/challenge");
 app.use("/api/challenges", challengeRoutes);
+
+const checkinRoutes = require("./routes/checkin");
+app.use("/api/checkins", checkinRoutes);
+
+const rewardRoutes = require("./routes/reward");
+app.use("/api/rewards", rewardRoutes);
+
+const participantRoutes = require("./routes/participant");
+app.use("/api/participants", participantRoutes);
+
+//----Connecting MongoDB----//
+mongoose.connect(process.env.MONGO_URI).then(() => {
+    server.listen(process.env.PORT, () => {
+        console.log(`Server is running on port ${process.env.PORT}`);
+    })
+}).catch((err) => {
+    console.log(err);
+})
+
