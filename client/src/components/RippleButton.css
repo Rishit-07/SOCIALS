@@ -1,0 +1,44 @@
+.ripple-button {
+    position: relative;
+    overflow: hidden;
+    isolation: isolate;
+    border: none;
+    outline: none;
+}
+
+.ripple-button__label {
+    position: relative;
+    z-index: 2;
+}
+
+.ripple-button__surface {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    z-index: 1;
+}
+
+.ripple-button__wave {
+    position: absolute;
+    border-radius: 999px;
+    background: var(--ripple-color, #ef4444);
+    opacity: 0.35;
+    transform: scale(0);
+    animation: ripple-wave 650ms ease-out;
+}
+
+.ripple-button--disabled {
+    cursor: not-allowed;
+}
+
+@keyframes ripple-wave {
+    from {
+        transform: scale(0);
+        opacity: 0.4;
+    }
+
+    to {
+        transform: scale(1);
+        opacity: 0;
+    }
+}
