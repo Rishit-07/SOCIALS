@@ -16,30 +16,47 @@ const ProtectedRoute = ({ children }) => {
   return user ? children : <Navigate to="/login" />;
 };
 
+const AppContent = () => {
+  const { user } = useContext(AuthContext);
+
+  return (
+    <BrowserRouter>
+      <Routes>
+        <Route
+          path="/"
+          element={user ? <Navigate to="/dashboard" replace /> : <Landing />}
+        />
+        <Route
+          path="/login"
+          element={user ? <Navigate to="/dashboard" replace /> : <Login />}
+        />
+        <Route
+          path="/register"
+          element={user ? <Navigate to="/dashboard" replace /> : <Register />}
+        />
+        <Route path="/community" element={<Community />} />
+        <Route path="/dashboard" element={
+            <ProtectedRoute><Dashboard /></ProtectedRoute>
+        } />
+        <Route path="/create" element={
+            <ProtectedRoute><CreateChallenge /></ProtectedRoute>
+        } />
+        <Route path="/challenge/:id" element={
+            <ProtectedRoute><ChallengeDetail /></ProtectedRoute>
+        } />
+        <Route path="/profile" element={
+            <ProtectedRoute><Profile /></ProtectedRoute>
+        } />
+      </Routes>
+      {user && <DockNav />}
+    </BrowserRouter>
+  );
+};
+
 const App = () => {
   return (
     <AuthProvider>
-      <BrowserRouter>
-        <DockNav />
-        <Routes>
-          <Route path="/" element={<Landing />} />
-<Route path="/login" element={<Login />} />
-<Route path="/register" element={<Register />} />
-<Route path="/community" element={<Community />} />
-<Route path="/dashboard" element={
-    <ProtectedRoute><Dashboard /></ProtectedRoute>
-} />
-<Route path="/create" element={
-    <ProtectedRoute><CreateChallenge /></ProtectedRoute>
-} />
-<Route path="/challenge/:id" element={
-    <ProtectedRoute><ChallengeDetail /></ProtectedRoute>
-} />
-<Route path="/profile" element={
-    <ProtectedRoute><Profile /></ProtectedRoute>
-} />
-        </Routes>
-      </BrowserRouter>
+      <AppContent />
     </AuthProvider>
   );
 };

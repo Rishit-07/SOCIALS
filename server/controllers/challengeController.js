@@ -17,9 +17,7 @@ const createChallenge = async(req,res)=>{
             inviteCode
         })
         await newChallenge.save();
-        return res.status(201).json({
-            message:"Challenge created.!"
-        })
+        return res.status(201).json(newChallenge);
     }catch(err){
          return res.status(500).json({
             message:err.message
@@ -27,36 +25,40 @@ const createChallenge = async(req,res)=>{
     }
 }
 
-const joinChallenge = async(req,res)=>{
-    try{
-        const {inviteCode} = req.body;
-        const challenge = await Challenge.findOne({inviteCode});
-        if(!challenge){
-            return res.status(404).json({
-                message:"Challenge not found"
-            })
+const joinChallenge = async (req, res) => {
+    try {
+        const { inviteCode } = req.body;
+        const challenge = await Challenge.findOne({ inviteCode });
+        if (!challenge) {
+            return res.status(404).json({ message: "Challenge not found" });
         }
-        const user = await Participant.findOne({challenge:challenge._id,user:req.user.id})
-        if(user){
-            return res.status(400).json({
-                message:"Participant already exists"
-            })
+
+        const existingParticipant = await Participant.findOne({
+            challenge: challenge._id,
+            user: req.user.id
+        });
+        if (existingParticipant) {
+            return res.status(400).json({ message: "Already a participant" });
         }
 
         const newParticipant = new Participant({
             challenge: challenge._id,
-            user: req.user.id
-        })
+            user: req.user.id,
+            status: challenge.isPublic ? "approved" : "pending"
+        });
         await newParticipant.save();
+
         return res.status(200).json({
-            message:"New Participant added.!"
-        })
-    }catch(err){
-        return res.status(500).json({
-            message:err.message
-        })
+            message: challenge.isPublic
+                ? "Joined successfully!"
+                : "Join request sent! Waiting for approval.",
+            status: newParticipant.status
+        });
+
+    } catch (err) {
+        return res.status(500).json({ message: err.message });
     }
-}
+};
 
 const getAllChallenge = async(req,res)=>{
     try{

@@ -43,3 +43,16 @@ mongoose.connect(process.env.MONGO_URI).then(() => {
     console.log(err);
 })
 
+io.on('connection', (socket) => {
+    socket.on('join-room', (roomId) => {
+        socket.join(roomId);
+    });
+
+    socket.on('send-message', ({ roomId, message }) => {
+        socket.to(roomId).emit('receive-message', message);
+    });
+
+    socket.on('join-request', ({ roomId, requester }) => {
+        socket.to(roomId).emit('new-join-request', requester);
+    });
+});

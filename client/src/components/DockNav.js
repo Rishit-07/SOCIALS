@@ -5,7 +5,7 @@ import {
   VscAdd,
   VscHome,
   VscOrganization,
-  VscSignOut,
+  VscSignOut
 } from "react-icons/vsc";
 import { AuthContext } from "../context/AuthContext";
 import Dock from "./Dock";
@@ -31,7 +31,7 @@ export default function DockNav() {
     { label: "Community", path: "/community", icon: <VscOrganization size={18} /> },
     { label: "Create", path: "/create", icon: <VscAdd size={18} /> },
     { label: "Profile", path: "/profile", icon: <VscAccount size={18} /> },
-  ];
+];
 
   const coreItems = (user ? privateItems : publicItems).map((item) => ({
     icon: item.icon,
@@ -48,7 +48,7 @@ export default function DockNav() {
           label: "Logout",
           onClick: () => {
             logout();
-            navigate("/");
+            window.location.replace("/");
           },
         },
       ]

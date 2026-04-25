@@ -24,7 +24,12 @@ const participantSchema = new mongoose.Schema({
         type:String,
          enum: ["upcoming", "active", "completed"],
       default: "upcoming",
-    }
+    },
+    status: {
+    type: String,
+    enum: ["pending", "approved", "rejected"],
+    default: "pending"
+}
 },
 {timestamps:true});
 module.exports = mongoose.model("Participant",participantSchema);

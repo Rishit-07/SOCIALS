@@ -192,20 +192,17 @@ const Landing = () => {
                 .nav-link:hover {
                     color: white;
                 }
-
                 .landing-hero-copy {
                     color: #e5e7eb;
                     line-height: 1.12;
                     max-width: 900px;
                     margin-top: 1rem;
                 }
-
                 .landing-hero-title {
                     font-size: 3rem;
                     font-weight: bold;
                     color: #fff;
                 }
-
                 .landing-hero-subtitle {
                     font-size: 1.25rem;
                     font-weight: 400;

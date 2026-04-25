@@ -35,7 +35,12 @@ const challengeSchema = mongoose.Schema({
         type: String,
         enum: ["upcoming", "active", "completed"],
         default: "upcoming",
-    }
+    },
+    isPublic: {
+    type: Boolean,
+    default: true
+}
+
 },
     { timestamps: true }
 );
