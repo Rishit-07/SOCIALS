@@ -24,12 +24,14 @@
   width: fit-content;
   gap: 0.75rem;
   border-radius: 1rem;
-  background-color: rgba(0, 0, 0, 0.9);
-  border: 2px solid #888888;
+  background: linear-gradient(rgba(255, 255, 255, 0.12), rgba(255, 255, 255, 0.04));
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
+  border: 1px solid rgba(255, 255, 255, 0.14);
   padding: 0 0.5rem 0.5rem;
   z-index: 100;
   pointer-events: auto;
-  box-shadow: 0 18px 40px rgba(0, 0, 0, 0.4);
+  box-shadow: 0 18px 40px rgba(0, 0, 0, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.12);
 }
 
 .dock-item {
@@ -38,9 +40,11 @@
   align-items: center;
   justify-content: center;
   border-radius: 12px;
-  background-color: rgba(0, 0, 0, 0.8);
-  border: 1px solid rgba(255, 255, 255, 0.5);
-  box-shadow: none;
+  background: linear-gradient(rgba(255, 255, 255, 0.14), rgba(255, 255, 255, 0.06));
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.2), inset 0 1px 0 rgba(255, 255, 255, 0.08);
   cursor: pointer;
   outline: none;
   color: #ffffff;
@@ -65,8 +69,10 @@
   width: fit-content;
   white-space: pre;
   border-radius: 0.375rem;
-  border: 1px solid #888888;
-  background-color: #000000;
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  background: linear-gradient(rgba(255, 255, 255, 0.14), rgba(255, 255, 255, 0.06));
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
   padding: 0.125rem 0.5rem;
   font-size: 0.75rem;
   color: #ffffff;
@@ -75,9 +81,10 @@
 }
 
 .dock-item-active {
-  border-color: #ffffff;
+  border-color: rgba(255, 255, 255, 0.4);
   color: #ffffff;
-  background-color: rgba(255, 255, 255, 0.3);
+  background: linear-gradient(rgba(255, 255, 255, 0.24), rgba(255, 255, 255, 0.12));
+  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.25), 0 0 0 1px rgba(255, 255, 255, 0.12) inset;
 }
 
 @media (max-width: 640px) {
