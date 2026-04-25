@@ -76,4 +76,32 @@ const getPendingParticipants = async (req, res) => {
     }
 };
 
-module.exports = { getParticipants, getLeaderboard ,approveParticipant,rejectParticipant,getPendingParticipants};
+const leaveChallenge = async (req, res) => {
+    try {
+        const { challengeId } = req.params;
+
+        const participant = await Participant.findOne({
+            challenge: challengeId,
+            user: req.user.id
+        });
+
+        if (!participant) {
+            return res.status(404).json({ message: "You are not part of this challenge" });
+        }
+
+        await Participant.deleteOne({ _id: participant._id });
+
+        return res.status(200).json({ message: "You have left the challenge" });
+    } catch (err) {
+        return res.status(500).json({ message: err.message });
+    }
+};
+
+module.exports = {
+    getParticipants,
+    getLeaderboard,
+    approveParticipant,
+    rejectParticipant,
+    getPendingParticipants,
+    leaveChallenge
+};

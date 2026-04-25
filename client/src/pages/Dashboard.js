@@ -1,6 +1,6 @@
 import { useState, useEffect, useContext, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { motion, useScroll, useTransform } from 'framer-motion';
+import { AnimatePresence, motion, useScroll, useTransform } from 'framer-motion';
 import { AuthContext } from '../context/AuthContext';
 import API from '../api/axios';
 import Particles from '../components/Particles';
@@ -16,6 +16,11 @@ const Dashboard = () => {
     const [loading, setLoading] = useState(true);
     const [totalCheckins, setTotalCheckins] = useState(0);
     const [scrambleGreeting, setScrambleGreeting] = useState('Hellooo.!! 🙌');
+    const [showLeaveDialog, setShowLeaveDialog] = useState(false);
+    const [challengeToLeave, setChallengeToLeave] = useState(null);
+    const [leaving, setLeaving] = useState(false);
+    const [leaveError, setLeaveError] = useState('');
+    const [showLoadingScreen, setShowLoadingScreen] = useState(false);
 
     const { scrollYProgress } = useScroll();
     const heroY = useTransform(scrollYProgress, [0, 0.35], [0, -50]);
@@ -24,6 +29,37 @@ const Dashboard = () => {
 
     const greetingText = `Hello.!! ${user?.name || ''} 🙌`;
 
+    const addToActiveChallenges = useCallback((challenge, participantStatus = 'approved') => {
+        if (!challenge?._id) {
+            return;
+        }
+
+        const currentUserId = String(user?.id || user?._id || '');
+        const isCreator =
+            String(challenge.createdBy) === currentUserId ||
+            String(challenge.createdBy?._id) === currentUserId;
+
+        setUserChallenges((prev) => {
+            if (prev.some((c) => String(c._id) === String(challenge._id))) {
+                return prev;
+            }
+
+            return [
+                {
+                    ...challenge,
+                    isCreator,
+                    participantStatus,
+                    canLeave: !isCreator && participantStatus !== 'rejected',
+                },
+                ...prev,
+            ];
+        });
+    }, [user]);
+
+    const removeFromActiveChallenges = useCallback((challengeId) => {
+        setUserChallenges((prev) => prev.filter((challenge) => String(challenge._id) !== String(challengeId)));
+    }, []);
+
     const fetchChallenges = useCallback(async () => {
         try {
             const res = await API.get('/api/challenges');
@@ -31,30 +67,76 @@ const Dashboard = () => {
             setAllChallenges(all);
 
             const currentUserId = String(user?.id || user?._id || '');
-            const mine = all.filter(c =>
-                String(c.createdBy) === currentUserId ||
-                String(c.createdBy?._id) === currentUserId
-            );
-            setUserChallenges(mine);
 
             if (!currentUserId) {
+                setUserChallenges([]);
                 setTotalCheckins(0);
             } else {
                 const participantLists = await Promise.all(
-                    mine.map((challenge) =>
+                    all.map((challenge) =>
                         API.get(`/api/participants/${challenge._id}`)
                             .then((response) => response.data)
                             .catch(() => [])
                     )
                 );
 
-                const checkinsCount = participantLists
-                    .flat()
-                    .filter((participant) => {
+                const participantsByChallenge = {};
+                participantLists.forEach((list, index) => {
+                    participantsByChallenge[all[index]?._id] = list;
+                });
+
+                const mine = all.filter((challenge, index) => {
+                    const isCreator =
+                        String(challenge.createdBy) === currentUserId ||
+                        String(challenge.createdBy?._id) === currentUserId;
+
+                    const isJoinedParticipant = (participantsByChallenge[challenge._id] || []).some((participant) => {
+                        const participantUserId = String(participant?.user?._id || participant?.user || '');
+                        const participantStatus = participant?.status;
+                        return participantUserId === currentUserId && participantStatus !== 'rejected';
+                    });
+
+                    return isCreator || isJoinedParticipant;
+                }).map((challenge) => {
+                    const isCreator =
+                        String(challenge.createdBy) === currentUserId ||
+                        String(challenge.createdBy?._id) === currentUserId;
+
+                    const participantRecord = (participantsByChallenge[challenge._id] || []).find((participant) => {
                         const participantUserId = String(participant?.user?._id || participant?.user || '');
                         return participantUserId === currentUserId;
-                    })
-                    .reduce((sum, participant) => sum + (participant?.totalCheckIn || 0), 0);
+                    });
+
+                    const participantStatus = participantRecord?.status || null;
+
+                    return {
+                        ...challenge,
+                        isCreator,
+                        participantStatus,
+                        canLeave: !isCreator && participantStatus !== 'rejected',
+                    };
+                });
+
+                setUserChallenges(mine);
+
+                const checkinLists = await Promise.all(
+                    mine.map((challenge) =>
+                        API.get(`/api/checkins/${challenge._id}`)
+                            .then((response) => response.data)
+                            .catch(() => [])
+                    )
+                );
+
+                const checkinsCount = checkinLists
+                    .flat()
+                    .filter((checkin) => {
+                        const checkinUserId = String(
+                            checkin?.participant?.user?._id ||
+                            checkin?.participant?.user ||
+                            ''
+                        );
+                        return checkinUserId === currentUserId;
+                    }).length;
 
                 setTotalCheckins(checkinsCount);
             }
@@ -66,13 +148,42 @@ const Dashboard = () => {
     }, [user]);
 
     useEffect(() => {
-        fetchChallenges();
+        // Check if page just reloaded after join/leave
+        const wasReloading = sessionStorage.getItem('dashboardReloading');
+        if (wasReloading) {
+            setShowLoadingScreen(true);
+            // Show loading for 1.5 seconds then hide
+            const timer = setTimeout(() => {
+                setShowLoadingScreen(false);
+                sessionStorage.removeItem('dashboardReloading');
+            }, 1500);
+            return () => clearTimeout(timer);
+        }
+    }, []);
 
+    useEffect(() => {
         const refreshInterval = window.setInterval(() => {
             fetchChallenges();
-        }, 10000);
+        }, 4000);
 
-        return () => window.clearInterval(refreshInterval);
+        const handleFocus = () => {
+            fetchChallenges();
+        };
+
+        const handleVisibilityChange = () => {
+            if (document.visibilityState === 'visible') {
+                fetchChallenges();
+            }
+        };
+
+        window.addEventListener('focus', handleFocus);
+        document.addEventListener('visibilitychange', handleVisibilityChange);
+
+        return () => {
+            window.clearInterval(refreshInterval);
+            window.removeEventListener('focus', handleFocus);
+            document.removeEventListener('visibilitychange', handleVisibilityChange);
+        };
     }, [fetchChallenges]);
 
     useEffect(() => {
@@ -122,10 +233,65 @@ const Dashboard = () => {
         try {
             const res = await API.post('/api/challenges/join', { inviteCode });
             setJoinSuccess(res.data.message);
+
+            const joinedChallenge = allChallenges.find(
+                (challenge) => String(challenge.inviteCode || '').toUpperCase() === String(inviteCode).toUpperCase()
+            );
+            if (joinedChallenge) {
+                addToActiveChallenges(joinedChallenge, res.data?.status || 'approved');
+            }
+
             setInviteCode('');
-            fetchChallenges();
+            sessionStorage.setItem('dashboardReloading', 'true');
+            setShowLoadingScreen(true);
+            await fetchChallenges();
+            setTimeout(() => window.location.reload(), 500);
         } catch (err) {
             setJoinError(err.response?.data?.message || 'Invalid invite code');
+        }
+    };
+
+    const openLeaveDialog = (challenge, e) => {
+        e.stopPropagation();
+        setLeaveError('');
+        setChallengeToLeave(challenge);
+        setShowLeaveDialog(true);
+    };
+
+    const closeLeaveDialog = () => {
+        if (leaving) {
+            return;
+        }
+        setShowLeaveDialog(false);
+        setChallengeToLeave(null);
+        setLeaveError('');
+    };
+
+    const confirmLeaveChallenge = async () => {
+        if (!challengeToLeave?._id) {
+            return;
+        }
+
+        setLeaving(true);
+        setLeaveError('');
+        setJoinSuccess('');
+        setJoinError('');
+
+        try {
+            const res = await API.delete(`/api/participants/${challengeToLeave._id}/leave`);
+            setJoinSuccess(res.data?.message || 'Left challenge successfully');
+            removeFromActiveChallenges(challengeToLeave._id);
+            setShowLeaveDialog(false);
+            setChallengeToLeave(null);            sessionStorage.setItem('dashboardReloading', 'true');
+            setShowLoadingScreen(true);            await fetchChallenges();
+            setTimeout(() => window.location.reload(), 500);
+        } catch (err) {
+            const serverMessage =
+                (typeof err.response?.data === 'string' && err.response.data) ||
+                err.response?.data?.message;
+            setLeaveError(serverMessage || 'Could not leave challenge');
+        } finally {
+            setLeaving(false);
         }
     };
 
@@ -291,6 +457,27 @@ const Dashboard = () => {
                                             Invite: <span style={{ color: '#ef4444', letterSpacing: '1px' }}>{challenge.inviteCode}</span>
                                         </span>
                                     </div>
+                                    {challenge.canLeave && (
+                                        <div style={{ marginTop: '0.9rem', display: 'flex', justifyContent: 'flex-end' }}>
+                                            <motion.button
+                                                whileHover={{ scale: 1.04 }}
+                                                whileTap={{ scale: 0.95 }}
+                                                onClick={(e) => openLeaveDialog(challenge, e)}
+                                                style={{
+                                                    padding: '0.5rem 0.9rem',
+                                                    background: 'rgba(239,68,68,0.14)',
+                                                    border: '1px solid rgba(239,68,68,0.35)',
+                                                    borderRadius: '999px',
+                                                    color: '#ef4444',
+                                                    fontSize: '0.78rem',
+                                                    fontWeight: 600,
+                                                    cursor: 'pointer',
+                                                }}
+                                            >
+                                                Leave Challenge
+                                            </motion.button>
+                                        </div>
+                                    )}
                                 </motion.div>
                             ))}
                         </motion.div>
@@ -455,7 +642,11 @@ const Dashboard = () => {
                                                 try {
                                                     const res = await API.post('/api/challenges/join', { inviteCode: challenge.inviteCode });
                                                     setJoinSuccess(res.data.message);
-                                                    setTimeout(() => setJoinSuccess(''), 3000);
+                                                    addToActiveChallenges(challenge, res.data?.status || 'approved');
+                                                    sessionStorage.setItem('dashboardReloading', 'true');
+                                                    setShowLoadingScreen(true);
+                                                    await fetchChallenges();
+                                                    setTimeout(() => window.location.reload(), 500);
                                                 } catch (err) {
                                                     setJoinError(err.response?.data?.message || 'Could not join');
                                                     setTimeout(() => setJoinError(''), 3000);
@@ -477,6 +668,194 @@ const Dashboard = () => {
                     )}
                 </motion.div>
             </div>
+
+            <AnimatePresence>
+                {showLeaveDialog && challengeToLeave && (
+                    <motion.div
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        style={{
+                            position: 'fixed',
+                            inset: 0,
+                            zIndex: 120,
+                            background: 'rgba(0,0,0,0.55)',
+                            backdropFilter: 'blur(6px)',
+                            WebkitBackdropFilter: 'blur(6px)',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            padding: '1rem',
+                        }}
+                        onClick={closeLeaveDialog}
+                    >
+                        <motion.div
+                            initial={{ opacity: 0, y: 42, scale: 0.86, rotateX: -8 }}
+                            animate={{ opacity: 1, y: 0, scale: 1, rotateX: 0 }}
+                            exit={{ opacity: 0, y: 22, scale: 0.92 }}
+                            transition={{ type: 'spring', stiffness: 280, damping: 26 }}
+                            style={{
+                                width: 'min(460px, 100%)',
+                                borderRadius: '18px',
+                                border: '1px solid rgba(239,68,68,0.28)',
+                                background: 'linear-gradient(145deg, rgba(20,24,30,0.95), rgba(15,20,25,0.94))',
+                                boxShadow: '0 28px 80px rgba(0,0,0,0.45)',
+                                padding: '1.35rem',
+                            }}
+                            onClick={(e) => e.stopPropagation()}
+                        >
+                            <div
+                                style={{
+                                    width: '44px',
+                                    height: '44px',
+                                    borderRadius: '12px',
+                                    background: 'rgba(239,68,68,0.16)',
+                                    border: '1px solid rgba(239,68,68,0.35)',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    marginBottom: '0.85rem',
+                                    fontSize: '1.25rem',
+                                }}
+                            >
+                                ⚠
+                            </div>
+                            <h3 style={{ color: '#fff', fontSize: '1.12rem', marginBottom: '0.45rem' }}>
+                                Leave this challenge?
+                            </h3>
+                            <p style={{ color: 'rgba(255,255,255,0.6)', fontSize: '0.9rem', lineHeight: 1.5, marginBottom: '1rem' }}>
+                                You are about to leave <span style={{ color: '#fff', fontWeight: 600 }}>{challengeToLeave.title}</span>. You can rejoin later with the invite code if allowed.
+                            </p>
+
+                            {leaveError && (
+                                <p style={{ color: '#ef4444', fontSize: '0.84rem', marginBottom: '0.9rem' }}>
+                                    {leaveError}
+                                </p>
+                            )}
+
+                            <div style={{ display: 'flex', gap: '0.65rem', justifyContent: 'flex-end' }}>
+                                <motion.button
+                                    whileHover={{ scale: 1.03 }}
+                                    whileTap={{ scale: 0.97 }}
+                                    onClick={closeLeaveDialog}
+                                    disabled={leaving}
+                                    style={{
+                                        padding: '0.6rem 1rem',
+                                        background: 'rgba(255,255,255,0.04)',
+                                        border: '1px solid rgba(255,255,255,0.12)',
+                                        borderRadius: '9px',
+                                        color: 'rgba(255,255,255,0.85)',
+                                        fontSize: '0.86rem',
+                                        fontWeight: 500,
+                                        cursor: leaving ? 'not-allowed' : 'pointer',
+                                    }}
+                                >
+                                    Cancel
+                                </motion.button>
+                                <motion.button
+                                    whileHover={{ scale: 1.03 }}
+                                    whileTap={{ scale: 0.97 }}
+                                    onClick={confirmLeaveChallenge}
+                                    disabled={leaving}
+                                    style={{
+                                        padding: '0.6rem 1rem',
+                                        background: leaving ? 'rgba(239,68,68,0.6)' : '#ef4444',
+                                        border: 'none',
+                                        borderRadius: '9px',
+                                        color: '#fff',
+                                        fontSize: '0.86rem',
+                                        fontWeight: 600,
+                                        cursor: leaving ? 'not-allowed' : 'pointer',
+                                    }}
+                                >
+                                    {leaving ? 'Leaving...' : 'Yes, Leave'}
+                                </motion.button>
+                            </div>
+                        </motion.div>
+                    </motion.div>
+                )}
+            </AnimatePresence>
+
+            {/* Loading Overlay */}
+            <AnimatePresence>
+                {showLoadingScreen && (
+                    <motion.div
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        transition={{ duration: 0.3 }}
+                        style={{
+                            position: 'fixed',
+                            top: 0,
+                            left: 0,
+                            right: 0,
+                            bottom: 0,
+                            background: 'rgba(0, 0, 0, 0.8)',
+                            backdropFilter: 'blur(8px)',
+                            display: 'flex',
+                            flexDirection: 'column',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            zIndex: 9999,
+                        }}
+                    >
+                        {/* Animated Spinner */}
+                        <motion.div
+                            animate={{ rotate: 360 }}
+                            transition={{ duration: 2, repeat: Infinity, ease: 'linear' }}
+                            style={{
+                                width: '60px',
+                                height: '60px',
+                                border: '4px solid rgba(239, 68, 68, 0.2)',
+                                borderTop: '4px solid #ef4444',
+                                borderRadius: '50%',
+                                marginBottom: '1.5rem',
+                            }}
+                        />
+
+                        {/* Loading Text */}
+                        <motion.p
+                            animate={{ opacity: [0.5, 1, 0.5] }}
+                            transition={{ duration: 1.5, repeat: Infinity }}
+                            style={{
+                                color: '#fff',
+                                fontSize: '1rem',
+                                fontWeight: 500,
+                                letterSpacing: '2px',
+                            }}
+                        >
+                            Loading...
+                        </motion.p>
+
+                        {/* Animated Dots */}
+                        <motion.div
+                            style={{
+                                display: 'flex',
+                                gap: '0.5rem',
+                                marginTop: '1rem',
+                            }}
+                        >
+                            {[0, 1, 2].map((index) => (
+                                <motion.div
+                                    key={index}
+                                    animate={{ y: [0, -10, 0] }}
+                                    transition={{
+                                        duration: 0.8,
+                                        repeat: Infinity,
+                                        delay: index * 0.15,
+                                    }}
+                                    style={{
+                                        width: '8px',
+                                        height: '8px',
+                                        borderRadius: '50%',
+                                        background: '#ef4444',
+                                    }}
+                                />
+                            ))}
+                        </motion.div>
+                    </motion.div>
+                )}
+            </AnimatePresence>
         </div>
     );
 };
