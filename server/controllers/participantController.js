@@ -95,6 +95,8 @@ const leaveChallenge = async (req, res) => {
     } catch (err) {
         return res.status(500).json({ message: err.message });
     }
+
+   
 };
 
 module.exports = {
@@ -103,5 +105,5 @@ module.exports = {
     approveParticipant,
     rejectParticipant,
     getPendingParticipants,
-    leaveChallenge
+    leaveChallenge,
 };

@@ -3,9 +3,6 @@ const Reward = require("../models/reward");
 const getUserRewards = async (req, res) => {
     try {
         const rewards = await Reward.find({ user: req.user.id })
-        if (rewards.length === 0) {
-            return res.status(404).json({ message: "No rewards found" })
-        }
         res.status(200).json(rewards)
     } catch (error) {
         console.error(error)

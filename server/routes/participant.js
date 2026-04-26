@@ -5,6 +5,7 @@ const {
 	approveParticipant,
 	rejectParticipant,
 	getPendingParticipants,
+	getParticipantsByUser,
 	leaveChallenge
 } = require("../controllers/participantController");
 const protect = require("../middleware/auth");
@@ -16,5 +17,6 @@ router.get("/:challengeId/pending", protect, getPendingParticipants);
 router.delete("/:challengeId/leave", protect, leaveChallenge);
 router.put("/:id/approve", protect, approveParticipant);
 router.put("/:id/reject", protect, rejectParticipant);
+router.delete("/:challengeId/leave", protect, leaveChallenge);
 
 module.exports = router;

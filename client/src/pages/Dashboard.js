@@ -65,7 +65,7 @@ const Dashboard = () => {
             const res = await API.get('/api/challenges');
             const all = res.data;
             setAllChallenges(all);
-
+            console.log("all challenges from API:", all);
             const currentUserId = String(user?.id || user?._id || '');
 
             if (!currentUserId) {
@@ -91,10 +91,10 @@ const Dashboard = () => {
                         String(challenge.createdBy?._id) === currentUserId;
 
                     const isJoinedParticipant = (participantsByChallenge[challenge._id] || []).some((participant) => {
-                        const participantUserId = String(participant?.user?._id || participant?.user || '');
-                        const participantStatus = participant?.status;
-                        return participantUserId === currentUserId && participantStatus !== 'rejected';
-                    });
+    const participantUserId = String(participant?.user?._id || participant?.user || '');
+    const participantStatus = participant?.status;
+    return participantUserId === currentUserId && participantStatus === 'approved';
+});
 
                     return isCreator || isJoinedParticipant;
                 }).map((challenge) => {

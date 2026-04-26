@@ -5,12 +5,14 @@ const dotenv = require("dotenv")
 const socket = require("socket.io");
 const mongoose = require("mongoose");
 const http = require("http");
+const path = require("path");
 
 //----Initialization----//
 const app = express()
 dotenv.config()
 app.use(cors())
 app.use(express.json())
+app.use("/uploads", express.static(path.join(__dirname, "uploads")));
 const server = http.createServer(app);
 const io = socket(server);
 
@@ -33,6 +35,9 @@ app.use("/api/rewards", rewardRoutes);
 
 const participantRoutes = require("./routes/participant");
 app.use("/api/participants", participantRoutes);
+
+const userRoutes = require("./routes/users");
+app.use("/api/users", userRoutes);
 
 //----Connecting MongoDB----//
 mongoose.connect(process.env.MONGO_URI).then(() => {

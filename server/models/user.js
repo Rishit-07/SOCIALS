@@ -19,7 +19,11 @@ const UserSchema = new mongoose.Schema({
     },
     avatar:{
         type:String,
-        default:""
+        default:"/default-avatar.png"
+    },
+    role:{
+        type:String,
+        default:"Productivity Warrior"
     },
     reward:[
         {

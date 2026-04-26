@@ -1,11 +1,22 @@
 import React, { useState } from 'react';
-import Particles from '../components/Particles';
+import PixelBlast from '../components/PixelBlast';
 import TextType from '../components/TextType';
 import RippleButton from '../components/RippleButton';
+import { useContext, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { AuthContext } from '../context/AuthContext';
 
 const Landing = () => {
     const [showSecondLine, setShowSecondLine] = useState(false);
     const [loopCount, setLoopCount] = useState(0);
+    const { user } = useContext(AuthContext);
+    const navigate = useNavigate();
+
+    useEffect(() => {
+         if (user) {
+         navigate('/dashboard');
+    }
+}, [user, navigate]);
 
     return (
         <div
@@ -19,7 +30,7 @@ const Landing = () => {
                 background: '#0f1419',
             }}
         >
-            {/* Particles */}
+            {/* PixelBlast */}
             <div
                 style={{
                     position: 'absolute',
@@ -28,16 +39,21 @@ const Landing = () => {
                     zIndex: 0,
                 }}
             >
-                <Particles
-                    particleCount={250}
-                    particleSpread={15}
-                    speed={0.05}
-                    particleColors={['#ffffff', '#f3f4f6', '#e5e7eb']}
-                    moveParticlesOnHover={true}
-                    particleHoverFactor={2.5}
-                    alphaParticles={true}
-                    particleBaseSize={150}
-                    sizeRandomness={1.2}
+                <PixelBlast
+                    variant="circle"
+                    pixelSize={6.5}
+                    color="#8e8a8b"
+                    patternScale={3.4}
+                    patternDensity={1.08}
+                    pixelSizeJitter={0.12}
+                    enableRipples={true}
+                    rippleSpeed={0.38}
+                    rippleThickness={0.11}
+                    rippleIntensityScale={1.25}
+                    liquid={false}
+                    speed={0.34}
+                    edgeFade={0.15}
+                    transparent={true}
                 />
             </div>
 
@@ -192,17 +208,20 @@ const Landing = () => {
                 .nav-link:hover {
                     color: white;
                 }
+
                 .landing-hero-copy {
                     color: #e5e7eb;
                     line-height: 1.12;
                     max-width: 900px;
                     margin-top: 1rem;
                 }
+
                 .landing-hero-title {
                     font-size: 3rem;
                     font-weight: bold;
                     color: #fff;
                 }
+
                 .landing-hero-subtitle {
                     font-size: 1.25rem;
                     font-weight: 400;

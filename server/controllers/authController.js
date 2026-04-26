@@ -71,7 +71,9 @@ const login = async(req,res)=>{
         user:{
         id:existingUser._id,
         name:existingUser.name,
-        email:existingUser.email
+        email:existingUser.email,
+        role:existingUser.role,
+        avatar:existingUser.avatar
         }
     })
 }catch(err){
