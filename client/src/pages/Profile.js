@@ -190,10 +190,11 @@ const Profile = () => {
                             alignItems: 'stretch',
                         }}
                     >
-                        <ProfileCard
+                       <ProfileCard
                             name={profileForm.name}
                             role={profileForm.role}
                             avatarUrl={displayedAvatar}
+                            cardRarity={user?.cardRarity || 'common'}
                         />
 
                         <motion.div
@@ -235,11 +236,7 @@ const Profile = () => {
                                     <motion.button
                                         whileHover={{ scale: 1.02 }}
                                         whileTap={{ scale: 0.98 }}
-                                        type="button"
-                                        onClick={() => {
-                                            setSaveStatus({ type: '', message: '' });
-                                            setIsEditingProfile(true);
-                                        }}
+                                        onClick={() => navigate('/edit-profile')}
                                         style={{
                                             marginTop: '0.4rem',
                                             width: '100%',

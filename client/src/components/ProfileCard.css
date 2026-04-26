@@ -12,8 +12,8 @@
   border-radius: 32px;
   background: radial-gradient(
     340px circle at var(--glow-x, 50%) var(--glow-y, 50%),
-    rgba(239, 68, 68, 0.36),
-    rgba(239, 68, 68, 0.14) 38%,
+    var(--rarity-glow, rgba(239,68,68,0.36)),
+    var(--rarity-glow-mid, rgba(239,68,68,0.14)) 38%,
     transparent 70%
   );
   filter: blur(30px);
@@ -27,35 +27,52 @@
   width: 100%;
   height: 100%;
   border-radius: 30px;
-  border: 1px solid rgba(239, 68, 68, 0.24);
-  background: linear-gradient(180deg, #2a1212 0%, #1a0f12 45%, #130c0f 100%);
+  border: 1px solid var(--rarity-border, rgba(239,68,68,0.24));
+  background: var(--rarity-bg, linear-gradient(180deg, #2a1212 0%, #1a0f12 45%, #130c0f 100%));
   backdrop-filter: blur(14px);
   overflow: hidden;
   transition: transform 180ms ease-out, box-shadow 180ms ease-out;
   transform-style: preserve-3d;
-  box-shadow: 0 30px 70px rgba(0, 0, 0, 0.52);
+  box-shadow: 0 30px 70px rgba(0,0,0,0.52), 0 0 40px var(--rarity-shadow, rgba(239,68,68,0.15));
 }
 
 .profile-card::before {
   content: "";
   position: absolute;
   inset: 0;
-  background: linear-gradient(145deg, rgba(239, 68, 68, 0.22), rgba(7, 12, 25, 0.1) 45%, rgba(185, 28, 28, 0.18));
+  background: var(--rarity-overlay, linear-gradient(145deg, rgba(239,68,68,0.22), rgba(7,12,25,0.1) 45%, rgba(185,28,28,0.18)));
   pointer-events: none;
+}
+
+/* Rarity pattern icons */
+.profile-card-pattern {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 1;
+  opacity: 0.07;
+  font-size: 1.4rem;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 18px;
+  padding: 16px;
+  overflow: hidden;
+  align-content: flex-start;
+  filter: blur(0.3px);
 }
 
 .profile-card-shimmer {
   position: absolute;
   inset: -120% -50%;
-  background: linear-gradient(
+  background: var(--rarity-shimmer, linear-gradient(
     120deg,
     transparent 20%,
-    rgba(251, 113, 133, 0.1) 34%,
-    rgba(248, 113, 113, 0.2) 42%,
-    rgba(239, 68, 68, 0.16) 52%,
-    rgba(251, 146, 60, 0.2) 58%,
+    rgba(251,113,133,0.1) 34%,
+    rgba(248,113,113,0.2) 42%,
+    rgba(239,68,68,0.16) 52%,
+    rgba(251,146,60,0.2) 58%,
     transparent 74%
-  );
+  ));
   transform: translateX(-38%) rotate(18deg);
   animation: holoSweep 7.5s linear infinite;
   pointer-events: none;
@@ -67,8 +84,8 @@
   inset: 0;
   background: radial-gradient(
     280px circle at var(--pointer-x, 50%) var(--pointer-y, 50%),
-    rgba(255, 209, 209, 0.26),
-    rgba(251, 146, 60, 0.08) 35%,
+    var(--rarity-glare, rgba(255,209,209,0.26)),
+    rgba(251,146,60,0.08) 35%,
     transparent 70%
   );
   pointer-events: none;
@@ -85,8 +102,8 @@
   margin-top: -125px;
   border-radius: 50%;
   padding: 5px;
-  background: linear-gradient(145deg, rgba(239, 68, 68, 0.95), rgba(251, 113, 133, 0.72));
-  box-shadow: 0 18px 40px rgba(127, 29, 29, 0.45);
+  background: var(--rarity-avatar-ring, linear-gradient(145deg, rgba(239,68,68,0.95), rgba(251,113,133,0.72)));
+  box-shadow: 0 18px 40px var(--rarity-avatar-shadow, rgba(127,29,29,0.45));
   display: flex;
   justify-content: center;
   align-items: center;
@@ -98,18 +115,14 @@
   height: 100%;
   border-radius: 50%;
   object-fit: cover;
-  object-position: center;
-  border: 2px solid rgba(255, 255, 255, 0.18);
+  border: 2px solid rgba(255,255,255,0.18);
   background: #201317;
-  filter: saturate(1.02) contrast(1.03) brightness(0.95);
 }
 
 .profile-card-content {
   position: absolute;
-  left: 0;
-  right: 0;
+  left: 0; right: 0;
   top: 48px;
-  bottom: auto;
   text-align: center;
   padding: 0 22px;
   z-index: 3;
@@ -121,51 +134,157 @@
   font-weight: 800;
   letter-spacing: 0.2px;
   line-height: 1;
-  background: linear-gradient(90deg, #fff5f5 8%, #fecaca 44%, #f87171 72%, #ef4444 100%);
+  background: var(--rarity-name-gradient, linear-gradient(90deg, #fff5f5 8%, #fecaca 44%, #f87171 72%, #ef4444 100%));
   -webkit-background-clip: text;
   background-clip: text;
   color: transparent;
-  text-shadow: 0 0 26px rgba(239, 68, 68, 0.32);
+  text-shadow: none;
+  filter: var(--rarity-name-glow, drop-shadow(0 0 12px rgba(239,68,68,0.4)));
 }
 
 .profile-role {
   margin: 0.45rem 0 0;
-  font-size: 1.95rem;
+  font-size: 1.4rem;
   font-weight: 600;
-  letter-spacing: 0.3px;
-  background: linear-gradient(90deg, rgba(255, 229, 229, 0.9), rgba(248, 113, 113, 0.86));
+  background: var(--rarity-role-gradient, linear-gradient(90deg, rgba(255,229,229,0.9), rgba(248,113,113,0.86)));
   -webkit-background-clip: text;
   background-clip: text;
   color: transparent;
 }
 
+.profile-rarity-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  margin-top: 0.5rem;
+  padding: 4px 12px;
+  border-radius: 20px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  border: 1px solid var(--rarity-badge-border, rgba(239,68,68,0.4));
+  background: var(--rarity-badge-bg, rgba(239,68,68,0.15));
+  color: var(--rarity-badge-color, #ef4444);
+}
+
+/* COMMON */
+.rarity-common {
+  --rarity-glow: rgba(180,180,180,0.3);
+  --rarity-glow-mid: rgba(180,180,180,0.12);
+  --rarity-border: rgba(180,180,180,0.3);
+  --rarity-bg: linear-gradient(180deg, #1a1a1a 0%, #111111 45%, #0d0d0d 100%);
+  --rarity-overlay: linear-gradient(145deg, rgba(200,200,200,0.1), rgba(7,12,25,0.1) 45%, rgba(150,150,150,0.1));
+  --rarity-shimmer: linear-gradient(120deg, transparent 20%, rgba(220,220,220,0.08) 40%, rgba(255,255,255,0.12) 50%, rgba(220,220,220,0.08) 60%, transparent 74%);
+  --rarity-glare: rgba(255,255,255,0.15);
+  --rarity-shadow: rgba(200,200,200,0.1);
+  --rarity-avatar-ring: linear-gradient(145deg, rgba(180,180,180,0.9), rgba(220,220,220,0.6));
+  --rarity-avatar-shadow: rgba(0,0,0,0.4);
+  --rarity-name-gradient: linear-gradient(90deg, #e0e0e0 8%, #c0c0c0 44%, #a0a0a0 72%, #808080 100%);
+  --rarity-name-glow: drop-shadow(0 0 8px rgba(200,200,200,0.3));
+  --rarity-role-gradient: linear-gradient(90deg, rgba(220,220,220,0.8), rgba(160,160,160,0.7));
+  --rarity-badge-border: rgba(180,180,180,0.4);
+  --rarity-badge-bg: rgba(180,180,180,0.1);
+  --rarity-badge-color: #c0c0c0;
+}
+
+/* RARE */
+.rarity-rare {
+  --rarity-glow: rgba(59,130,246,0.4);
+  --rarity-glow-mid: rgba(59,130,246,0.16);
+  --rarity-border: rgba(59,130,246,0.35);
+  --rarity-bg: linear-gradient(180deg, #0d1a2e 0%, #091422 45%, #060e18 100%);
+  --rarity-overlay: linear-gradient(145deg, rgba(59,130,246,0.22), rgba(7,12,25,0.1) 45%, rgba(37,99,235,0.18));
+  --rarity-shimmer: linear-gradient(120deg, transparent 20%, rgba(96,165,250,0.12) 34%, rgba(147,197,253,0.22) 44%, rgba(59,130,246,0.18) 54%, rgba(37,99,235,0.12) 62%, transparent 74%);
+  --rarity-glare: rgba(147,197,253,0.28);
+  --rarity-shadow: rgba(59,130,246,0.2);
+  --rarity-avatar-ring: linear-gradient(145deg, rgba(59,130,246,0.95), rgba(96,165,250,0.72));
+  --rarity-avatar-shadow: rgba(29,78,216,0.5);
+  --rarity-name-gradient: linear-gradient(90deg, #eff6ff 8%, #bfdbfe 44%, #60a5fa 72%, #3b82f6 100%);
+  --rarity-name-glow: drop-shadow(0 0 14px rgba(59,130,246,0.5));
+  --rarity-role-gradient: linear-gradient(90deg, rgba(219,234,254,0.9), rgba(96,165,250,0.8));
+  --rarity-badge-border: rgba(59,130,246,0.5);
+  --rarity-badge-bg: rgba(59,130,246,0.15);
+  --rarity-badge-color: #60a5fa;
+}
+
+/* EPIC */
+.rarity-epic {
+  --rarity-glow: rgba(239,68,68,0.45);
+  --rarity-glow-mid: rgba(251,146,60,0.2);
+  --rarity-border: rgba(239,68,68,0.4);
+  --rarity-bg: linear-gradient(180deg, #2a0f00 0%, #1a0800 45%, #120500 100%);
+  --rarity-overlay: linear-gradient(145deg, rgba(239,68,68,0.28), rgba(7,12,25,0.1) 45%, rgba(251,146,60,0.22));
+  --rarity-shimmer: linear-gradient(120deg, transparent 20%, rgba(251,146,60,0.15) 30%, rgba(239,68,68,0.25) 42%, rgba(220,38,38,0.2) 52%, rgba(251,146,60,0.15) 62%, transparent 74%);
+  --rarity-glare: rgba(254,215,170,0.3);
+  --rarity-shadow: rgba(239,68,68,0.25);
+  --rarity-avatar-ring: linear-gradient(145deg, rgba(239,68,68,0.95), rgba(251,146,60,0.8));
+  --rarity-avatar-shadow: rgba(185,28,28,0.6);
+  --rarity-name-gradient: linear-gradient(90deg, #fff7ed 8%, #fed7aa 44%, #fb923c 72%, #ef4444 100%);
+  --rarity-name-glow: drop-shadow(0 0 18px rgba(239,68,68,0.6));
+  --rarity-role-gradient: linear-gradient(90deg, rgba(254,215,170,0.9), rgba(251,146,60,0.85));
+  --rarity-badge-border: rgba(239,68,68,0.5);
+  --rarity-badge-bg: rgba(239,68,68,0.15);
+  --rarity-badge-color: #fb923c;
+}
+
+/* LEGENDARY */
+.rarity-legendary {
+  --rarity-glow: rgba(234,179,8,0.5);
+  --rarity-glow-mid: rgba(234,179,8,0.22);
+  --rarity-border: rgba(234,179,8,0.45);
+  --rarity-bg: linear-gradient(180deg, #1a1400 0%, #110e00 45%, #0a0800 100%);
+  --rarity-overlay: linear-gradient(145deg, rgba(234,179,8,0.3), rgba(7,12,25,0.1) 45%, rgba(161,122,0,0.25));
+  --rarity-shimmer: linear-gradient(120deg, transparent 20%, rgba(253,224,71,0.15) 30%, rgba(234,179,8,0.28) 42%, rgba(202,138,4,0.22) 52%, rgba(253,224,71,0.15) 62%, transparent 74%);
+  --rarity-glare: rgba(254,249,195,0.35);
+  --rarity-shadow: rgba(234,179,8,0.3);
+  --rarity-avatar-ring: linear-gradient(145deg, rgba(234,179,8,0.95), rgba(253,224,71,0.75));
+  --rarity-avatar-shadow: rgba(161,122,0,0.6);
+  --rarity-name-gradient: linear-gradient(90deg, #fefce8 8%, #fef08a 44%, #facc15 72%, #eab308 100%);
+  --rarity-name-glow: drop-shadow(0 0 22px rgba(234,179,8,0.7));
+  --rarity-role-gradient: linear-gradient(90deg, rgba(254,249,195,0.95), rgba(253,224,71,0.88));
+  --rarity-badge-border: rgba(234,179,8,0.55);
+  --rarity-badge-bg: rgba(234,179,8,0.18);
+  --rarity-badge-color: #facc15;
+}
+
+/* MYTHIC */
+.rarity-mythic {
+  --rarity-glow: rgba(168,85,247,0.55);
+  --rarity-glow-mid: rgba(168,85,247,0.25);
+  --rarity-border: rgba(168,85,247,0.5);
+  --rarity-bg: linear-gradient(180deg, #150a2a 0%, #0e0618 45%, #080410 100%);
+  --rarity-overlay: linear-gradient(145deg, rgba(168,85,247,0.35), rgba(7,12,25,0.1) 45%, rgba(109,40,217,0.28));
+  --rarity-shimmer: linear-gradient(120deg, transparent 20%, rgba(196,181,253,0.18) 30%, rgba(168,85,247,0.32) 42%, rgba(124,58,237,0.25) 52%, rgba(196,181,253,0.18) 62%, transparent 74%);
+  --rarity-glare: rgba(237,233,254,0.38);
+  --rarity-shadow: rgba(168,85,247,0.35);
+  --rarity-avatar-ring: linear-gradient(145deg, rgba(168,85,247,0.95), rgba(196,181,253,0.75));
+  --rarity-avatar-shadow: rgba(109,40,217,0.65);
+  --rarity-name-gradient: linear-gradient(90deg, #faf5ff 8%, #e9d5ff 44%, #c084fc 72%, #a855f7 100%);
+  --rarity-name-glow: drop-shadow(0 0 26px rgba(168,85,247,0.8));
+  --rarity-role-gradient: linear-gradient(90deg, rgba(237,233,254,0.95), rgba(196,181,253,0.88));
+  --rarity-badge-border: rgba(168,85,247,0.6);
+  --rarity-badge-bg: rgba(168,85,247,0.2);
+  --rarity-badge-color: #c084fc;
+}
+
 @keyframes holoSweep {
-  0% {
-    transform: translateX(-45%) rotate(18deg);
-  }
-  100% {
-    transform: translateX(50%) rotate(18deg);
-  }
+  0% { transform: translateX(-45%) rotate(18deg); }
+  100% { transform: translateX(50%) rotate(18deg); }
+}
+
+@keyframes mythicPulse {
+  0%, 100% { opacity: 0.07; }
+  50% { opacity: 0.13; }
+}
+
+.rarity-mythic .profile-card-pattern {
+  animation: mythicPulse 3s ease-in-out infinite;
 }
 
 @media (max-width: 640px) {
-  .profile-card-shell {
-    max-width: 100%;
-    height: 480px;
-  }
-
-  .profile-avatar-wrap {
-    width: 200px;
-    height: 200px;
-    margin-left: -100px;
-    margin-top: -90px;
-  }
-
-  .profile-name {
-    font-size: 2.25rem;
-  }
-
-  .profile-role {
-    font-size: 1.25rem;
-  }
+  .profile-card-shell { max-width: 100%; height: 480px; }
+  .profile-avatar-wrap { width: 200px; height: 200px; margin-left: -100px; margin-top: -90px; }
+  .profile-name { font-size: 2.25rem; }
+  .profile-role { font-size: 1.25rem; }
 }

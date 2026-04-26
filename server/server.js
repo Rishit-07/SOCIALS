@@ -39,6 +39,8 @@ app.use("/api/participants", participantRoutes);
 const userRoutes = require("./routes/users");
 app.use("/api/users", userRoutes);
 
+app.use("/uploads", express.static(path.join(__dirname, "uploads")));
+
 //----Connecting MongoDB----//
 mongoose.connect(process.env.MONGO_URI).then(() => {
     server.listen(process.env.PORT, () => {

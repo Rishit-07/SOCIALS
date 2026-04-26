@@ -1,4 +1,5 @@
 import { createContext, useState, useEffect } from "react";
+import API from "../api/axios";
 
 export const AuthContext = createContext();
 
@@ -30,13 +31,24 @@ const AuthProvider = ({ children }) => {
         localStorage.removeItem("user");
     };
 
+    const refreshUser = async () => {
+    try {
+        const res = await API.get('/api/users/profile');
+        const updatedUser = res.data.user;
+        setUser(updatedUser);
+        localStorage.setItem('user', JSON.stringify(updatedUser));
+    } catch (err) {
+        console.error(err);
+    }
+};
+
     const updateUser = (userData) => {
         setUser(userData);
         localStorage.setItem("user", JSON.stringify(userData));
     };
 
     return (
-        <AuthContext.Provider value={{ user, token, login, logout, updateUser }}>
+        <AuthContext.Provider value={{ user, token, login, logout, updateUser,refreshUser }}>
             {children}
         </AuthContext.Provider>
     );

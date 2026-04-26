@@ -10,6 +10,7 @@ import ChallengeDetail from "./pages/ChallengeDetail";
 import Profile from "./pages/Profile";
 import DockNav from "./components/DockNav";
 import Community from './pages/Community';
+import EditProfile from './pages/EditProfile';
 
 const ProtectedRoute = ({ children }) => {
   const { user } = useContext(AuthContext);
@@ -45,14 +46,16 @@ const AppContent = () => {
             <ProtectedRoute><ChallengeDetail /></ProtectedRoute>
         } />
         <Route path="/profile" element={
-            <ProtectedRoute><Profile /></ProtectedRoute>
+            <ProtectedRoute><Profile /></ProtectedRoute>  
+        } />
+        <Route path="/edit-profile" element={
+            <ProtectedRoute><EditProfile /></ProtectedRoute>
         } />
       </Routes>
       {user && <DockNav />}
     </BrowserRouter>
   );
 };
-
 const App = () => {
   return (
     <AuthProvider>
