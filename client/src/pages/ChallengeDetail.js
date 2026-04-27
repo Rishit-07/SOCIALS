@@ -26,6 +26,15 @@ const ChallengeDetail = () => {
     const [pendingParticipants, setPendingParticipants] = useState([]);
     const messagesEndRef = useRef(null);
 
+    const getId = (value) => {
+        if (!value) return '';
+        if (typeof value === 'string' || typeof value === 'number') return String(value);
+        if (typeof value === 'object') {
+            return String(value._id || value.id || '');
+        }
+        return String(value);
+    };
+
     useEffect(() => {
         fetchChallenge();
         fetchParticipants();
@@ -137,12 +146,7 @@ const ChallengeDetail = () => {
         setNewMessage('');
     };
 
-    const isOwner = challenge && (
-        String(challenge.createdBy) === String(user?.id) ||
-        String(challenge.createdBy) === String(user?._id) ||
-        String(challenge.createdBy?._id) === String(user?.id) ||
-        String(challenge.createdBy?._id) === String(user?._id)
-    );
+    const isOwner = challenge && getId(challenge.createdBy) === getId(user);
 
     const tabs = isOwner
         ? ['checkin', 'members', 'chat', 'leaderboard', 'requests']

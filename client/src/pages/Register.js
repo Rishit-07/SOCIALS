@@ -70,6 +70,24 @@ const Register = () => {
                     width: 'min(420px, 90%)',
                     boxShadow: '0 8px 32px rgba(0,0,0,0.4)',
                 }}>
+                    <button
+                        type="button"
+                        onClick={() => navigate('/')}
+                        style={{
+                            background: 'transparent',
+                            border: '1px solid rgba(255,255,255,0.18)',
+                            borderRadius: '8px',
+                            color: 'rgba(255,255,255,0.8)',
+                            fontSize: '0.82rem',
+                            fontWeight: 600,
+                            padding: '0.45rem 0.8rem',
+                            marginBottom: '1rem',
+                            cursor: 'pointer',
+                        }}
+                    >
+                        ← Back to Home
+                    </button>
+
                     <h1 style={{ color: '#fff', fontSize: '1.8rem', fontWeight: 700, marginBottom: '0.25rem' }}>
                         Create account
                     </h1>

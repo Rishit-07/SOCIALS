@@ -41,35 +41,36 @@ const withComputedStatus = (challengeDoc) => {
 
 const createChallenge = async (req, res) => {
     try {
-        const { title, description, duration, category, startDate } = req.body;
+        const { title, description, duration, category, startDate, isPublic } = req.body;
+        const crypto = require("crypto");
         const inviteCode = crypto.randomBytes(3).toString("hex").toUpperCase();
+
         const newChallenge = new Challenge({
             title,
             description,
             duration,
             category,
             startDate,
+            isPublic,
             createdBy: req.user.id,
-            inviteCode,
+            inviteCode
         });
 
-        newChallenge.status = getChallengeLifecycleStatus(newChallenge);
-
         await newChallenge.save();
-        const Participant = require("../models/participant");
 
-// Auto-add creator as approved participant
+        // Auto-add creator as approved participant
         const creatorParticipant = new Participant({
             challenge: newChallenge._id,
             user: req.user.id,
-            status: "approved"
+            status: "approved",
+            lastCheckIn: null,
         });
-await creatorParticipant.save();
-        return res.status(201).json(withComputedStatus(newChallenge));
+        await creatorParticipant.save();
+
+        return res.status(201).json(newChallenge);
+
     } catch (err) {
-        return res.status(500).json({
-            message: err.message,
-        });
+        return res.status(500).json({ message: err.message });
     }
 };
 

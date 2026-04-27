@@ -61,6 +61,13 @@ const CreateChallenge = () => {
         setLoading(true);
         setError('');
         setShowLoadingScreen(true);
+
+        if (new Date(startDate) < new Date().setHours(0, 0, 0, 0)) {
+            setError("Start date cannot be in the past!");
+            setLoading(false);
+            return;
+        }
+
         try {
             const res = await API.post('/api/challenges', {
                 title,
@@ -70,17 +77,17 @@ const CreateChallenge = () => {
                 startDate,
                 isPublic,
             });
-            
+
             // Store celebration data in sessionStorage
             sessionStorage.setItem('challengeCreated', 'true');
             sessionStorage.setItem('challengeTitle', title);
             setCreatedChallengeTitle(title);
-            
+
             // Show celebration modal
             setTimeout(() => {
                 setShowLoadingScreen(false);
                 setShowCelebration(true);
-                
+
                 // Navigate after celebration
                 setTimeout(() => {
                     navigate(`/challenge/${res.data._id}`);
@@ -110,7 +117,7 @@ const CreateChallenge = () => {
     return (
         <div
             style={{
-               minHeight: 'calc(100vh + var(--dock-safe-space, 0px))',
+                minHeight: 'calc(100vh + var(--dock-safe-space, 0px))',
                 paddingBottom: '120px',
                 width: '100%',
                 background: '#030507',
@@ -242,7 +249,16 @@ const CreateChallenge = () => {
 
                         <div style={{ marginBottom: '1.2rem' }}>
                             <label style={{ color: '#fff', fontSize: '0.85rem' }}>Start Date *</label>
-                            <input type="date" value={startDate} onChange={e => setStartDate(e.target.value)} required style={{ ...inputStyle, colorScheme: 'dark' }} />
+                            <input
+                                type="date"
+                                value={startDate}
+                                onChange={e => setStartDate(e.target.value)}
+                                required
+                                min={new Date().toISOString().split('T')[0]}
+                                style={{ ...inputStyle, colorScheme: 'dark' }}
+                                onFocus={e => e.target.style.borderColor = '#ef4444'}
+                                onBlur={e => e.target.style.borderColor = 'rgba(255,255,255,0.12)'}
+                            />
                         </div>
 
                         <div style={{ marginBottom: '1.5rem' }}>

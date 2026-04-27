@@ -16,7 +16,7 @@ import Notifications from './pages/Notifications';
 
 const ProtectedRoute = ({ children }) => {
   const { user } = useContext(AuthContext);
-  return user ? children : <Navigate to="/login" />;
+  return user ? children : <Navigate to="/" replace />;
 };
 
 const AppContent = () => {
@@ -27,7 +27,7 @@ const AppContent = () => {
       <Routes>
         <Route
           path="/"
-          element={user ? <Navigate to="/dashboard" replace /> : <Landing />}
+          element={<Landing />}
         />
         <Route
           path="/login"

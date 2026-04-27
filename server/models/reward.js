@@ -2,18 +2,22 @@ const mongoose = require("mongoose");
 const rewardSchema = new mongoose.Schema({
     user:{
         type: mongoose.Schema.Types.ObjectId,
-        ref:"User"
+        ref:"User",
+        required: true,
     },
     title:{
-       type:String,
-         enum: ["3-Days Streak", "7-Days Streak", "First Streak"],
+        type: String,
+        required: true,
+        trim: true,
     },
     reward:{
-       type:String,
-         enum: ["Streak", "Winner", "Participation"],
+        type: String,
+        enum: ["Streak", "Winner", "Participation"],
+        required: true,
     },
     date:{
-        type:Date
+        type: Date,
+        default: Date.now,
     }
 },{timestamps:true});
 module.exports = mongoose.model("Reward",rewardSchema);

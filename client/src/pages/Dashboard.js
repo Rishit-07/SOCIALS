@@ -29,13 +29,21 @@ const Dashboard = () => {
 
     const greetingText = `Hello.!! ${user?.name || ''} 🙌`;
 
+    const getId = useCallback((value) => {
+        if (!value) return '';
+        if (typeof value === 'string' || typeof value === 'number') return String(value);
+        if (typeof value === 'object') {
+            return String(value._id || value.id || '');
+        }
+        return String(value);
+    }, []);
+
     const addToActiveChallenges = useCallback((challenge, participantStatus = 'approved') => {
         if (!challenge?._id) return;
 
-        const currentUserId = String(user?.id || user?._id || '');
+        const currentUserId = getId(user);
         const isCreator =
-            String(challenge.createdBy) === currentUserId ||
-            String(challenge.createdBy?._id) === currentUserId;
+            getId(challenge.createdBy) === currentUserId;
 
         setUserChallenges((prev) => {
             if (prev.some((c) => String(c._id) === String(challenge._id))) {
@@ -52,7 +60,7 @@ const Dashboard = () => {
                 ...prev,
             ];
         });
-    }, [user]);
+    }, [getId, user]);
 
     const removeFromActiveChallenges = useCallback((challengeId) => {
         setUserChallenges((prev) =>
@@ -66,7 +74,7 @@ const Dashboard = () => {
             const all = res.data;
             setAllChallenges(all);
 
-            const currentUserId = String(user?.id || user?._id || '');
+            const currentUserId = getId(user);
 
             if (!currentUserId) {
                 setUserChallenges([]);
@@ -88,11 +96,10 @@ const Dashboard = () => {
                 const mine = all
                     .filter((challenge) => {
                         const isCreator =
-                            String(challenge.createdBy) === currentUserId ||
-                            String(challenge.createdBy?._id) === currentUserId;
+                            getId(challenge.createdBy) === currentUserId;
 
                         const isJoinedParticipant = (participantsByChallenge[challenge._id] || []).some((participant) => {
-                            const participantUserId = String(participant?.user?._id || participant?.user || '');
+                            const participantUserId = getId(participant?.user);
                             const participantStatus = participant?.status;
                             return participantUserId === currentUserId && participantStatus === 'approved';
                         });
@@ -101,11 +108,10 @@ const Dashboard = () => {
                     })
                     .map((challenge) => {
                         const isCreator =
-                            String(challenge.createdBy) === currentUserId ||
-                            String(challenge.createdBy?._id) === currentUserId;
+                            getId(challenge.createdBy) === currentUserId;
 
                         const participantRecord = (participantsByChallenge[challenge._id] || []).find((participant) => {
-                            const participantUserId = String(participant?.user?._id || participant?.user || '');
+                            const participantUserId = getId(participant?.user);
                             return participantUserId === currentUserId;
                         });
 
@@ -132,11 +138,7 @@ const Dashboard = () => {
                 const checkinsCount = checkinLists
                     .flat()
                     .filter((checkin) => {
-                        const checkinUserId = String(
-                            checkin?.participant?.user?._id ||
-                            checkin?.participant?.user ||
-                            ''
-                        );
+                        const checkinUserId = getId(checkin?.participant?.user);
                         return checkinUserId === currentUserId;
                     }).length;
 
@@ -147,7 +149,7 @@ const Dashboard = () => {
         } finally {
             setLoading(false);
         }
-    }, [user]);
+    }, [getId, user]);
 
     useEffect(() => {
         const wasReloading = sessionStorage.getItem('dashboardReloading');
@@ -624,7 +626,7 @@ const Dashboard = () => {
                                     >
                                         View →
                                     </motion.button>
-                                    {String(challenge.createdBy?._id || challenge.createdBy) !== String(user?.id || user?._id) && (
+                                    {getId(challenge.createdBy) !== getId(user) && (
                                         <motion.button
                                             whileHover={{ scale: 1.05 }}
                                             whileTap={{ scale: 0.95 }}

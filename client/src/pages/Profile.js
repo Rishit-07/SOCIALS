@@ -5,9 +5,14 @@ import API from '../api/axios';
 import Particles from '../components/Particles';
 import { useNavigate } from 'react-router-dom';
 import ProfileCard from '../components/ProfileCard';
+import BADGES from '../config/badges';
 
 const Profile = () => {
     const { user, logout, updateUser } = useContext(AuthContext);
+    const [stats, setStats] = useState(null);
+    const [selectedBadge, setSelectedBadge] = useState(null);
+    const [claiming, setClaiming] = useState(false);
+    const [claimStatus, setClaimStatus] = useState({ type: '', message: '' });
     const [rewards, setRewards] = useState([]);
     const [challenges, setChallenges] = useState([]);
     const [loading, setLoading] = useState(true);
@@ -38,29 +43,33 @@ const Profile = () => {
         return () => URL.revokeObjectURL(objectUrl);
     }, [profileForm.avatarFile]);
 
+    const fetchProfileData = async () => {
+        try {
+            const [rewardsRes, challengesRes, statsRes] = await Promise.all([
+                API.get('/api/rewards'),
+                API.get('/api/challenges'),
+                API.get('/api/users/stats'),
+            ]);
+            setRewards(rewardsRes.data);
+            setStats(statsRes.data);
+            const mine = challengesRes.data.filter(c =>
+                c.createdBy && (
+                    String(c.createdBy) === String(user?.id) ||
+                    String(c.createdBy) === String(user?._id) ||
+                    String(c.createdBy?._id) === String(user?.id) ||
+                    String(c.createdBy?._id) === String(user?._id)
+                )
+            );
+            setChallenges(mine);
+        } catch (err) {
+            console.error(err);
+        } finally {
+            setLoading(false);
+        }
+    };
+
     useEffect(() => {
-        const fetchProfileData = async () => {
-            try {
-                const [rewardsRes, challengesRes] = await Promise.all([
-                    API.get('/api/rewards'),
-                    API.get('/api/challenges'),
-                ]);
-                setRewards(rewardsRes.data);
-                const mine = challengesRes.data.filter(c =>
-                    c.createdBy && (
-                        String(c.createdBy) === String(user?.id) ||
-                        String(c.createdBy) === String(user?._id) ||
-                        String(c.createdBy?._id) === String(user?.id) ||
-                        String(c.createdBy?._id) === String(user?._id)
-                    )
-                );
-                setChallenges(mine);
-            } catch (err) {
-                console.error(err);
-            } finally {
-                setLoading(false);
-            }
-        };
+
 
         fetchProfileData();
     }, [user?.id, user?._id]);
@@ -190,7 +199,7 @@ const Profile = () => {
                             alignItems: 'stretch',
                         }}
                     >
-                       <ProfileCard
+                        <ProfileCard
                             name={profileForm.name}
                             role={profileForm.role}
                             avatarUrl={displayedAvatar}
@@ -414,7 +423,7 @@ const Profile = () => {
                     ))}
                 </motion.div>
 
-                {/* Rewards */}
+                {/* Badges Section */}
                 <motion.div
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
@@ -422,45 +431,301 @@ const Profile = () => {
                     style={glassStyle}
                 >
                     <h2 style={{ color: '#fff', fontSize: '1rem', fontWeight: 600, marginBottom: '1rem' }}>
-                        Rewards Earned
+                        Badges & Rewards
                     </h2>
-                    {rewards.length === 0 ? (
-                        <div style={{ textAlign: 'center', padding: '2rem' }}>
-                            <div style={{ fontSize: '2rem', marginBottom: '0.5rem' }}>🎯</div>
-                            <p style={{ color: 'rgba(255,255,255,0.3)', fontSize: '0.85rem' }}>
-                                No rewards yet. Complete challenges to earn them!
-                            </p>
-                        </div>
-                    ) : (
-                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(140px, 1fr))', gap: '0.75rem' }}>
-                            {rewards.map((reward, i) => (
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(130px, 1fr))', gap: '0.75rem' }}>
+                        {BADGES.map((badge, i) => {
+                            const earned = rewards.some(r => r.title === badge.reward.title);
+                            const unlocked = stats ? badge.check(stats) : false;
+                            const canClaim = unlocked && !earned;
+
+                            return (
                                 <motion.div
-                                    key={reward._id}
+                                    key={badge.id}
                                     initial={{ opacity: 0, scale: 0.8 }}
                                     animate={{ opacity: 1, scale: 1 }}
                                     transition={{ delay: i * 0.05, type: 'spring', bounce: 0.3 }}
+                                    whileHover={{ scale: 1.05, y: -2 }}
+                                    onClick={() => setSelectedBadge(badge)}
                                     style={{
-                                        background: 'rgba(239,68,68,0.08)',
-                                        border: '1px solid rgba(239,68,68,0.2)',
+                                        background: earned ? badge.bg : 'rgba(255,255,255,0.03)',
+                                        border: `1px solid ${earned ? badge.border : canClaim ? badge.border : 'rgba(255,255,255,0.08)'}`,
                                         borderRadius: '12px',
                                         padding: '1rem',
                                         textAlign: 'center',
+                                        cursor: 'pointer',
+                                        position: 'relative',
+                                        filter: earned ? 'none' : canClaim ? 'none' : 'grayscale(0.8)',
+                                        opacity: earned ? 1 : canClaim ? 0.85 : 0.5,
+                                        transition: 'all 0.2s ease',
                                     }}
                                 >
-                                    <div style={{ fontSize: '1.8rem', marginBottom: '0.5rem' }}>
-                                        {rewardIcons[reward.reward] || '⭐'}
+                                    {/* Claim indicator */}
+                                    {canClaim && (
+                                        <motion.div
+                                            animate={{ scale: [1, 1.2, 1] }}
+                                            transition={{ repeat: Infinity, duration: 1.5 }}
+                                            style={{
+                                                position: 'absolute',
+                                                top: '-4px', right: '-4px',
+                                                width: '12px', height: '12px',
+                                                borderRadius: '50%',
+                                                background: '#22c55e',
+                                                border: '2px solid #0f1419',
+                                            }}
+                                        />
+                                    )}
+
+                                    {/* Earned checkmark */}
+                                    {earned && (
+                                        <div style={{
+                                            position: 'absolute',
+                                            top: '-4px', right: '-4px',
+                                            width: '16px', height: '16px',
+                                            borderRadius: '50%',
+                                            background: '#22c55e',
+                                            border: '2px solid #0f1419',
+                                            display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                            fontSize: '8px', color: '#fff', fontWeight: 700,
+                                        }}>
+                                            ✓
+                                        </div>
+                                    )}
+
+                                    <div style={{ fontSize: '1.8rem', marginBottom: '0.4rem', filter: earned ? 'none' : 'grayscale(0.5)' }}>
+                                        {badge.icon}
                                     </div>
-                                    <div style={{ color: '#fff', fontSize: '0.85rem', fontWeight: 600, marginBottom: '0.25rem' }}>
-                                        {reward.title}
+                                    <div style={{
+                                        color: earned ? badge.color : canClaim ? badge.color : 'rgba(255,255,255,0.4)',
+                                        fontSize: '0.75rem',
+                                        fontWeight: 600,
+                                        marginBottom: '0.2rem',
+                                    }}>
+                                        {badge.title}
                                     </div>
-                                    <div style={{ color: 'rgba(255,255,255,0.4)', fontSize: '0.75rem' }}>
-                                        {reward.reward}
+                                    <div style={{
+                                        color: 'rgba(255,255,255,0.3)',
+                                        fontSize: '0.65rem',
+                                        textTransform: 'capitalize',
+                                    }}>
+                                        {badge.rarity}
                                     </div>
+                                    {canClaim && (
+                                        <div style={{
+                                            marginTop: '0.4rem',
+                                            color: '#22c55e',
+                                            fontSize: '0.65rem',
+                                            fontWeight: 700,
+                                        }}>
+                                            CLAIM!
+                                        </div>
+                                    )}
                                 </motion.div>
-                            ))}
-                        </div>
-                    )}
+                            );
+                        })}
+                    </div>
                 </motion.div>
+
+                {/* Badge Detail Modal */}
+                <AnimatePresence>
+                    {selectedBadge && (
+                        <>
+                            <motion.div
+                                initial={{ opacity: 0 }}
+                                animate={{ opacity: 1 }}
+                                exit={{ opacity: 0 }}
+                                onClick={() => {
+                                    setSelectedBadge(null);
+                                    setClaimStatus({ type: '', message: '' });
+                                }}
+                                style={{
+                                    position: 'fixed', inset: 0,
+                                    background: 'rgba(0,0,0,0.7)',
+                                    backdropFilter: 'blur(6px)',
+                                    zIndex: 100,
+                                }}
+                            />
+                            <motion.div
+                                initial={{ opacity: 0, scale: 0.8, y: 30 }}
+                                animate={{ opacity: 1, scale: 1, y: 0 }}
+                                exit={{ opacity: 0, scale: 0.8, y: 30 }}
+                                transition={{ type: 'spring', stiffness: 300, damping: 28 }}
+                                style={{
+                                    position: 'relative',
+                                    top: '50%', left: '50%',
+                                    transform: 'translate(-50%, -50%)',
+                                    background: 'linear-gradient(145deg, #1a1020, #0f1419)',
+                                    border: `1px solid ${selectedBadge.border}`,
+                                    borderRadius: '24px',
+                                    padding: '2.5rem',
+                                    zIndex: 101,
+                                    width: 'min(400px, 90%)',
+                                    textAlign: 'center',
+                                    boxShadow: `0 30px 80px rgba(0,0,0,0.6), 0 0 40px ${selectedBadge.bg}`,
+                                }}
+                                onClick={e => e.stopPropagation()}
+                            >
+                                {/* Badge icon */}
+                                <motion.div
+                                    initial={{ scale: 0 }}
+                                    animate={{ scale: 1 }}
+                                    transition={{ type: 'spring', bounce: 0.5, delay: 0.1 }}
+                                    style={{
+                                        fontSize: '4rem',
+                                        marginBottom: '1rem',
+                                        width: '80px',
+                                        height: '80px',
+                                        borderRadius: '50%',
+                                        background: selectedBadge.bg,
+                                        border: `2px solid ${selectedBadge.border}`,
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        justifyContent: 'center',
+                                        margin: '0 auto 1rem',
+                                        boxShadow: `0 0 30px ${selectedBadge.bg}`,
+                                    }}
+                                >
+                                    {selectedBadge.icon}
+                                </motion.div>
+
+                                {/* Rarity badge */}
+                                <div style={{
+                                    display: 'inline-block',
+                                    background: selectedBadge.bg,
+                                    border: `1px solid ${selectedBadge.border}`,
+                                    borderRadius: '20px',
+                                    padding: '3px 12px',
+                                    color: selectedBadge.color,
+                                    fontSize: '0.72rem',
+                                    fontWeight: 700,
+                                    textTransform: 'uppercase',
+                                    letterSpacing: '1px',
+                                    marginBottom: '0.75rem',
+                                }}>
+                                    {selectedBadge.rarity}
+                                </div>
+
+                                <h3 style={{ color: '#fff', fontSize: '1.2rem', fontWeight: 700, marginBottom: '0.4rem' }}>
+                                    {selectedBadge.title}
+                                </h3>
+                                <p style={{ color: 'rgba(255,255,255,0.5)', fontSize: '0.88rem', marginBottom: '1.25rem', lineHeight: 1.6 }}>
+                                    {selectedBadge.description}
+                                </p>
+
+                                {/* Task */}
+                                <div style={{
+                                    background: 'rgba(255,255,255,0.04)',
+                                    border: '1px solid rgba(255,255,255,0.08)',
+                                    borderRadius: '12px',
+                                    padding: '1rem',
+                                    marginBottom: '1.25rem',
+                                    textAlign: 'left',
+                                }}>
+                                    <div style={{ color: 'rgba(255,255,255,0.4)', fontSize: '0.72rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '0.4rem' }}>
+                                        How to earn
+                                    </div>
+                                    <div style={{ color: '#fff', fontSize: '0.88rem', lineHeight: 1.5 }}>
+                                        {selectedBadge.task}
+                                    </div>
+                                </div>
+
+                                {/* Progress / Status */}
+                                {(() => {
+                                    const earned = rewards.some(r => r.title === selectedBadge.reward.title);
+                                    const unlocked = stats ? selectedBadge.check(stats) : false;
+                                    const canClaim = unlocked && !earned;
+
+                                    if (earned) {
+                                        return (
+                                            <div style={{
+                                                padding: '0.75rem',
+                                                background: 'rgba(34,197,94,0.1)',
+                                                border: '1px solid rgba(34,197,94,0.3)',
+                                                borderRadius: '10px',
+                                                color: '#22c55e',
+                                                fontSize: '0.88rem',
+                                                fontWeight: 600,
+                                            }}>
+                                                ✓ Badge earned!
+                                            </div>
+                                        );
+                                    }
+
+                                    if (canClaim) {
+                                        return (
+                                            <>
+                                                {claimStatus.message && (
+                                                    <div style={{
+                                                        marginBottom: '0.75rem',
+                                                        padding: '0.6rem',
+                                                        borderRadius: '8px',
+                                                        background: claimStatus.type === 'success' ? 'rgba(34,197,94,0.1)' : 'rgba(239,68,68,0.1)',
+                                                        color: claimStatus.type === 'success' ? '#22c55e' : '#ef4444',
+                                                        fontSize: '0.82rem',
+                                                    }}>
+                                                        {claimStatus.message}
+                                                    </div>
+                                                )}
+                                                <motion.button
+                                                    whileHover={{ scale: 1.03 }}
+                                                    whileTap={{ scale: 0.97 }}
+                                                    disabled={claiming}
+                                                    onClick={async () => {
+                                                        setClaiming(true);
+                                                        setClaimStatus({ type: '', message: '' });
+                                                        try {
+                                                            await API.post('/api/users/claim-badge', {
+                                                                badgeId: selectedBadge.id,
+                                                                rewardType: selectedBadge.reward.type,
+                                                                rewardTitle: selectedBadge.reward.title,
+                                                            });
+                                                            setClaimStatus({ type: 'success', message: 'Badge claimed successfully!' });
+                                                            fetchProfileData();
+                                                            setTimeout(() => setSelectedBadge(null), 1500);
+                                                        } catch (err) {
+                                                            setClaimStatus({
+                                                                type: 'error',
+                                                                message: err.response?.data?.message || 'Could not claim badge'
+                                                            });
+                                                        } finally {
+                                                            setClaiming(false);
+                                                        }
+                                                    }}
+                                                    style={{
+                                                        width: '100%',
+                                                        padding: '0.85rem',
+                                                        background: claiming ? 'rgba(34,197,94,0.5)' : '#22c55e',
+                                                        border: 'none',
+                                                        borderRadius: '10px',
+                                                        color: '#fff',
+                                                        fontSize: '0.9rem',
+                                                        fontWeight: 700,
+                                                        cursor: claiming ? 'not-allowed' : 'pointer',
+                                                    }}
+                                                >
+                                                    {claiming ? 'Claiming...' : '🎉 Claim Badge!'}
+                                                </motion.button>
+                                            </>
+                                        );
+                                    }
+
+                                    return (
+                                        <div style={{
+                                            padding: '0.75rem',
+                                            background: 'rgba(255,255,255,0.03)',
+                                            border: '1px solid rgba(255,255,255,0.08)',
+                                            borderRadius: '10px',
+                                            color: 'rgba(255,255,255,0.4)',
+                                            fontSize: '0.85rem',
+                                        }}>
+                                            🔒 Complete the task above to unlock
+                                        </div>
+                                    );
+                                })()}
+                            </motion.div>
+                        </>
+                    )}
+                </AnimatePresence>
 
                 {/* Your Challenges */}
                 <motion.div
@@ -564,7 +829,10 @@ const Profile = () => {
                     transition={{ duration: 0.4, delay: 0.3 }}
                     whileHover={{ scale: 1.02 }}
                     whileTap={{ scale: 0.98 }}
-                    onClick={logout}
+                    onClick={() => {
+                        logout();
+                        navigate('/');
+                    }}
                     style={{
                         width: '100%',
                         padding: '0.95rem',
