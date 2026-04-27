@@ -11,6 +11,8 @@ import Profile from "./pages/Profile";
 import DockNav from "./components/DockNav";
 import Community from './pages/Community';
 import EditProfile from './pages/EditProfile';
+import About from './pages/About';
+import Notifications from './pages/Notifications';
 
 const ProtectedRoute = ({ children }) => {
   const { user } = useContext(AuthContext);
@@ -51,6 +53,11 @@ const AppContent = () => {
         <Route path="/edit-profile" element={
             <ProtectedRoute><EditProfile /></ProtectedRoute>
         } />
+       <Route path="/notifications" element={
+          <ProtectedRoute><Notifications /></ProtectedRoute>
+        } />
+
+      <Route path="/about" element={<About />} />
       </Routes>
       {user && <DockNav />}
     </BrowserRouter>

@@ -116,9 +116,7 @@ const Landing = () => {
                             }}
                         >
                             
-                            <a href="#about" className="nav-link">
-                                About
-                            </a>
+                          <a href="/about" className="nav-link">About</a>
                             <a href="/login" className="nav-link">
                                 Sign In
                             </a>

@@ -15,6 +15,8 @@ const Community = () => {
     const [activeTab, setActiveTab] = useState('challenges');
     const [joinError, setJoinError] = useState('');
     const [joinSuccess, setJoinSuccess] = useState('');
+    const [search, setSearch] = useState('');
+    const [userChallengeIds, setUserChallengeIds] = useState(new Set());
 
     useEffect(() => {
         fetchCommunityData();
@@ -23,15 +25,45 @@ const Community = () => {
     const fetchCommunityData = async () => {
         try {
             const challengeRes = await API.get('/api/challenges');
-            setChallenges(challengeRes.data);
+            const all = challengeRes.data;
+
+            const participantLists = await Promise.all(
+                all.map(c =>
+                    API.get(`/api/participants/${c._id}`)
+                        .then(res => res.data)
+                        .catch(() => [])
+                )
+            );
+
+            const currentUserId = String(user?.id || user?._id || '');
+            const joinedIds = new Set();
+
+            all.forEach((challenge, index) => {
+                const isCreator =
+                    String(challenge.createdBy) === currentUserId ||
+                    String(challenge.createdBy?._id) === currentUserId;
+
+                const isParticipant = participantLists[index].some(p =>
+                    String(p.user?._id || p.user) === currentUserId &&
+                    p.status !== 'rejected'
+                );
+
+                if (isCreator || isParticipant) {
+                    joinedIds.add(String(challenge._id));
+                }
+            });
+
+            setUserChallengeIds(joinedIds);
+            setChallenges(all);
 
             const checkinLists = await Promise.all(
-                challengeRes.data.slice(0, 5).map(c =>
+                all.slice(0, 5).map(c =>
                     API.get(`/api/checkins/${c._id}`)
                         .then(res => res.data.map(checkin => ({ ...checkin, challengeTitle: c.title })))
                         .catch(() => [])
                 )
             );
+
             setCheckins(checkinLists.flat().slice(0, 20));
         } catch (err) {
             console.error(err);
@@ -45,10 +77,12 @@ const Community = () => {
             navigate('/login');
             return;
         }
+
         try {
             const res = await API.post('/api/challenges/join', { inviteCode: challenge.inviteCode });
             setJoinSuccess(res.data.message);
             setTimeout(() => setJoinSuccess(''), 3000);
+            fetchCommunityData();
         } catch (err) {
             setJoinError(err.response?.data?.message || 'Could not join');
             setTimeout(() => setJoinError(''), 3000);
@@ -64,11 +98,11 @@ const Community = () => {
 
     const tabs = ['challenges', 'leaderboard', 'activity'];
 
-    // Build global leaderboard from all participants
     const [allParticipants, setAllParticipants] = useState([]);
 
     useEffect(() => {
         if (challenges.length === 0) return;
+
         const fetchAllParticipants = async () => {
             const lists = await Promise.all(
                 challenges.slice(0, 8).map(c =>
@@ -77,34 +111,52 @@ const Community = () => {
                         .catch(() => [])
                 )
             );
+
             const flat = lists.flat();
-            // Group by user and sum streaks
             const userMap = {};
+
             flat.forEach(p => {
                 const userId = String(p.user?._id || p.user);
                 const userName = p.user?.name || 'Unknown';
+
                 if (!userMap[userId]) {
-                    userMap[userId] = { name: userName, totalStreak: 0, totalCheckins: 0, challenges: 0 };
+                    userMap[userId] = {
+                        name: userName,
+                        totalStreak: 0,
+                        totalCheckins: 0,
+                        challenges: 0
+                    };
                 }
+
                 userMap[userId].totalStreak += p.streakCount || 0;
                 userMap[userId].totalCheckins += p.totalCheckIn || 0;
                 userMap[userId].challenges += 1;
             });
+
             const sorted = Object.values(userMap).sort((a, b) => b.totalStreak - a.totalStreak);
             setAllParticipants(sorted);
         };
+
         fetchAllParticipants();
     }, [challenges]);
 
-    const challengeCards = challenges.map((challenge) => ({
-        ...challenge,
-        color: '#120F17',
-        label: challenge.isPublic ? 'Public' : 'Private',
-    }));
+    const filteredChallenges = challenges.filter(c => {
+        const query = search.toLowerCase().trim();
+        const notJoined = !userChallengeIds.has(String(c._id));
 
-    return (
+        if (!query) return notJoined;
+
+        return notJoined && (
+            (c.title || '').toLowerCase().includes(query) ||
+            (c.category || '').toLowerCase().includes(query) ||
+            (c.description || '').toLowerCase().includes(query)
+        );
+    });
+
+    const challengeCards = filteredChallenges;
+
+      return (
         <div style={{ minHeight: '100vh', width: '100%', background: '#0f1419', position: 'relative' }}>
-            {/* Particles */}
             <div style={{ position: 'fixed', top: 0, left: 0, width: '100%', height: '100%', zIndex: 0 }}>
                 <Particles
                     particleCount={150}
@@ -121,7 +173,6 @@ const Community = () => {
 
             <div style={{ position: 'relative', zIndex: 10, maxWidth: '900px', margin: '0 auto', padding: '2.5rem 1.5rem 160px 1.5rem' }}>
 
-                {/* Header */}
                 <motion.div
                     initial={{ opacity: 0, y: -20 }}
                     animate={{ opacity: 1, y: 0 }}
@@ -136,7 +187,6 @@ const Community = () => {
                     </p>
                 </motion.div>
 
-                {/* Stats Row */}
                 <motion.div
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
@@ -171,15 +221,17 @@ const Community = () => {
                     ))}
                 </motion.div>
 
-                {/* Tabs */}
                 <motion.div
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
                     transition={{ duration: 0.4, delay: 0.2 }}
                     style={{
-                        display: 'flex', gap: '0.5rem', marginBottom: '1.5rem',
+                        display: 'flex',
+                        gap: '0.5rem',
+                        marginBottom: '1.5rem',
                         background: 'rgba(255,255,255,0.03)',
-                        padding: '4px', borderRadius: '12px',
+                        padding: '4px',
+                        borderRadius: '12px',
                         border: '1px solid rgba(255,255,255,0.08)',
                     }}
                 >
@@ -188,9 +240,11 @@ const Community = () => {
                             key={tab}
                             onClick={() => setActiveTab(tab)}
                             style={{
-                                flex: 1, padding: '0.6rem',
+                                flex: 1,
+                                padding: '0.6rem',
                                 background: activeTab === tab ? '#ef4444' : 'transparent',
-                                border: 'none', borderRadius: '8px',
+                                border: 'none',
+                                borderRadius: '8px',
                                 color: activeTab === tab ? '#fff' : 'rgba(255,255,255,0.4)',
                                 fontSize: '0.85rem',
                                 fontWeight: activeTab === tab ? 600 : 400,
@@ -204,7 +258,69 @@ const Community = () => {
                     ))}
                 </motion.div>
 
-                {/* Join feedback */}
+                <motion.div
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.15 }}
+                    style={{
+                        position: 'relative',
+                        marginBottom: '1.5rem',
+                    }}
+                >
+                    <span style={{
+                        position: 'absolute',
+                        left: '1rem',
+                        top: '50%',
+                        transform: 'translateY(-50%)',
+                        color: 'rgba(255,255,255,0.3)',
+                        fontSize: '1rem',
+                        pointerEvents: 'none',
+                    }}>
+                        🔍
+                    </span>
+
+                    <input
+                        type="text"
+                        value={search}
+                        onChange={e => setSearch(e.target.value)}
+                        placeholder="Search challenges or categories..."
+                        style={{
+                            width: '100%',
+                            padding: '0.85rem 1rem 0.85rem 2.75rem',
+                            background: 'rgba(255,255,255,0.04)',
+                            border: '1px solid rgba(255,255,255,0.1)',
+                            borderRadius: '12px',
+                            color: '#fff',
+                            fontSize: '0.9rem',
+                            outline: 'none',
+                            boxSizing: 'border-box',
+                        }}
+                    />
+
+                    {search && (
+                        <motion.button
+                            initial={{ opacity: 0, scale: 0.8 }}
+                            animate={{ opacity: 1, scale: 1 }}
+                            onClick={() => setSearch('')}
+                            style={{
+                                position: 'absolute',
+                                right: '1rem',
+                                top: '50%',
+                                transform: 'translateY(-50%)',
+                                background: 'rgba(255,255,255,0.08)',
+                                border: 'none',
+                                borderRadius: '6px',
+                                color: 'rgba(255,255,255,0.5)',
+                                fontSize: '0.8rem',
+                                padding: '3px 8px',
+                                cursor: 'pointer',
+                            }}
+                        >
+                            ✕ clear
+                        </motion.button>
+                    )}
+                </motion.div>
+
                 <AnimatePresence>
                     {(joinSuccess || joinError) && (
                         <motion.div
@@ -226,10 +342,7 @@ const Community = () => {
                     )}
                 </AnimatePresence>
 
-                {/* Tab Content */}
                 <AnimatePresence mode="wait">
-
-                    {/* Challenges Tab */}
                     {activeTab === 'challenges' && (
                         <motion.div
                             key="challenges"
@@ -240,9 +353,30 @@ const Community = () => {
                         >
                             {loading ? (
                                 <p style={{ color: 'rgba(255,255,255,0.4)' }}>Loading challenges...</p>
-                            ) : challenges.length === 0 ? (
+                            ) : filteredChallenges.length === 0 ? (
                                 <div style={{ ...glassStyle, textAlign: 'center', padding: '3rem' }}>
-                                    <p style={{ color: 'rgba(255,255,255,0.3)' }}>No challenges yet</p>
+                                    <div style={{ fontSize: '2rem', marginBottom: '0.5rem' }}>🔍</div>
+                                    <p style={{ color: 'rgba(255,255,255,0.3)' }}>
+                                        {search ? `No results for "${search}"` : 'No challenges yet'}
+                                    </p>
+
+                                    {search && (
+                                        <button
+                                            onClick={() => setSearch('')}
+                                            style={{
+                                                marginTop: '0.75rem',
+                                                padding: '0.5rem 1rem',
+                                                background: 'rgba(239,68,68,0.1)',
+                                                border: '1px solid rgba(239,68,68,0.2)',
+                                                borderRadius: '8px',
+                                                color: '#ef4444',
+                                                fontSize: '0.85rem',
+                                                cursor: 'pointer',
+                                            }}
+                                        >
+                                            Clear search
+                                        </button>
+                                    )}
                                 </div>
                             ) : (
                                 <MagicBento
@@ -261,28 +395,37 @@ const Community = () => {
                                         <>
                                             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '0.75rem' }}>
                                                 <span style={{
-                                                    background: 'rgba(232,74,63,0.12)', color: '#e84a3f',
+                                                    background: 'rgba(232,74,63,0.12)',
+                                                    color: '#e84a3f',
                                                     border: '1px solid rgba(232,74,63,0.22)',
-                                                    padding: '3px 10px', borderRadius: '20px',
-                                                    fontSize: '11px', fontWeight: 600,
+                                                    padding: '3px 10px',
+                                                    borderRadius: '20px',
+                                                    fontSize: '11px',
+                                                    fontWeight: 600,
                                                 }}>
                                                     {challenge.category}
                                                 </span>
+
                                                 <span style={{
                                                     background: challenge.isPublic ? 'rgba(34,197,94,0.1)' : 'rgba(232,74,63,0.1)',
                                                     color: challenge.isPublic ? '#22c55e' : '#e84a3f',
-                                                    padding: '3px 8px', borderRadius: '20px', fontSize: '11px',
+                                                    padding: '3px 8px',
+                                                    borderRadius: '20px',
+                                                    fontSize: '11px',
                                                 }}>
                                                     {challenge.isPublic ? '🌍 Public' : '🔒 Private'}
                                                 </span>
                                             </div>
+
                                             <div className="magic-bento-card__content">
                                                 <h3 style={{ color: '#fff', fontSize: '1rem', fontWeight: 700, margin: '0 0 0.45rem' }}>
                                                     {challenge.title}
                                                 </h3>
+
                                                 <p style={{ color: 'rgba(255,255,255,0.58)', fontSize: '0.84rem', marginBottom: '0.9rem', lineHeight: 1.5 }}>
                                                     {challenge.description.length > 80 ? challenge.description.substring(0, 80) + '...' : challenge.description}
                                                 </p>
+
                                                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.9rem' }}>
                                                     <span style={{ color: 'rgba(255,255,255,0.48)', fontSize: '0.8rem' }}>
                                                         📅 {challenge.duration} days
@@ -291,6 +434,7 @@ const Community = () => {
                                                         {challenge.status}
                                                     </span>
                                                 </div>
+
                                                 <div style={{ display: 'flex', gap: '0.5rem' }}>
                                                     <motion.button
                                                         whileHover={{ scale: 1.05 }}
@@ -300,31 +444,43 @@ const Community = () => {
                                                             navigate(`/challenge/${challenge._id}`);
                                                         }}
                                                         style={{
-                                                            flex: 1, padding: '0.6rem',
+                                                            flex: String(challenge.createdBy?._id || challenge.createdBy) !== String(user?.id || user?._id) ? 1 : 'unset',
+                                                            width: String(challenge.createdBy?._id || challenge.createdBy) === String(user?.id || user?._id) ? '100%' : 'auto',
+                                                            padding: '0.6rem',
                                                             background: 'transparent',
                                                             border: '1px solid rgba(255,255,255,0.15)',
-                                                            borderRadius: '8px', color: '#fff',
-                                                            fontSize: '0.82rem', cursor: 'pointer',
+                                                            borderRadius: '8px',
+                                                            color: '#fff',
+                                                            fontSize: '0.82rem',
+                                                            cursor: 'pointer',
                                                         }}
                                                     >
                                                         View →
                                                     </motion.button>
-                                                    <motion.button
-                                                        whileHover={{ scale: 1.05 }}
-                                                        whileTap={{ scale: 0.95 }}
-                                                        onClick={(e) => {
-                                                            e.stopPropagation();
-                                                            handleJoin(challenge);
-                                                        }}
-                                                        style={{
-                                                            flex: 1, padding: '0.6rem',
-                                                            background: '#e84a3f', border: 'none',
-                                                            borderRadius: '8px', color: '#fff',
-                                                            fontSize: '0.82rem', fontWeight: 700, cursor: 'pointer',
-                                                        }}
-                                                    >
-                                                        Join
-                                                    </motion.button>
+
+                                                    {String(challenge.createdBy?._id || challenge.createdBy) !== String(user?.id || user?._id) && (
+                                                        <motion.button
+                                                            whileHover={{ scale: 1.05 }}
+                                                            whileTap={{ scale: 0.95 }}
+                                                            onClick={(e) => {
+                                                                e.stopPropagation();
+                                                                handleJoin(challenge);
+                                                            }}
+                                                            style={{
+                                                                flex: 1,
+                                                                padding: '0.6rem',
+                                                                background: '#e84a3f',
+                                                                border: 'none',
+                                                                borderRadius: '8px',
+                                                                color: '#fff',
+                                                                fontSize: '0.82rem',
+                                                                fontWeight: 700,
+                                                                cursor: 'pointer',
+                                                            }}
+                                                        >
+                                                            Join
+                                                        </motion.button>
+                                                    )}
                                                 </div>
                                             </div>
                                         </>
@@ -334,19 +490,9 @@ const Community = () => {
                         </motion.div>
                     )}
 
-                    {/* Leaderboard Tab */}
                     {activeTab === 'leaderboard' && (
-                        <motion.div
-                            key="leaderboard"
-                            initial={{ opacity: 0, y: 10 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            exit={{ opacity: 0, y: -10 }}
-                            transition={{ duration: 0.3 }}
-                            style={glassStyle}
-                        >
-                            <h3 style={{ color: '#fff', fontSize: '1rem', fontWeight: 600, marginBottom: '1rem' }}>
-                                Global Leaderboard
-                            </h3>
+                        <motion.div key="leaderboard" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} transition={{ duration: 0.3 }} style={glassStyle}>
+                            <h3 style={{ color: '#fff', fontSize: '1rem', fontWeight: 600, marginBottom: '1rem' }}>Global Leaderboard</h3>
                             {allParticipants.length === 0 ? (
                                 <p style={{ color: 'rgba(255,255,255,0.3)', fontSize: '0.85rem' }}>No data yet</p>
                             ) : (
@@ -358,7 +504,9 @@ const Community = () => {
                                             animate={{ opacity: 1, x: 0 }}
                                             transition={{ delay: i * 0.05 }}
                                             style={{
-                                                display: 'flex', alignItems: 'center', gap: '1rem',
+                                                display: 'flex',
+                                                alignItems: 'center',
+                                                gap: '1rem',
                                                 padding: '0.75rem 1rem',
                                                 background: i === 0 ? 'rgba(239,68,68,0.08)' : i === 1 ? 'rgba(255,255,255,0.04)' : 'rgba(255,255,255,0.02)',
                                                 borderRadius: '10px',
@@ -369,10 +517,17 @@ const Community = () => {
                                                 {i === 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉' : `${i + 1}`}
                                             </div>
                                             <div style={{
-                                                width: '36px', height: '36px', borderRadius: '50%',
+                                                width: '36px',
+                                                height: '36px',
+                                                borderRadius: '50%',
                                                 background: 'rgba(239,68,68,0.2)',
-                                                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                                                color: '#ef4444', fontWeight: 700, fontSize: '13px', flexShrink: 0,
+                                                display: 'flex',
+                                                alignItems: 'center',
+                                                justifyContent: 'center',
+                                                color: '#ef4444',
+                                                fontWeight: 700,
+                                                fontSize: '13px',
+                                                flexShrink: 0,
                                             }}>
                                                 {p.name?.[0]?.toUpperCase()}
                                             </div>
@@ -392,19 +547,9 @@ const Community = () => {
                         </motion.div>
                     )}
 
-                    {/* Activity Tab */}
                     {activeTab === 'activity' && (
-                        <motion.div
-                            key="activity"
-                            initial={{ opacity: 0, y: 10 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            exit={{ opacity: 0, y: -10 }}
-                            transition={{ duration: 0.3 }}
-                            style={glassStyle}
-                        >
-                            <h3 style={{ color: '#fff', fontSize: '1rem', fontWeight: 600, marginBottom: '1rem' }}>
-                                Recent Activity
-                            </h3>
+                        <motion.div key="activity" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} transition={{ duration: 0.3 }} style={glassStyle}>
+                            <h3 style={{ color: '#fff', fontSize: '1rem', fontWeight: 600, marginBottom: '1rem' }}>Recent Activity</h3>
                             {checkins.length === 0 ? (
                                 <p style={{ color: 'rgba(255,255,255,0.3)', fontSize: '0.85rem' }}>No activity yet</p>
                             ) : (
@@ -416,7 +561,9 @@ const Community = () => {
                                             animate={{ opacity: 1, x: 0 }}
                                             transition={{ delay: i * 0.04 }}
                                             style={{
-                                                display: 'flex', alignItems: 'center', gap: '1rem',
+                                                display: 'flex',
+                                                alignItems: 'center',
+                                                gap: '1rem',
                                                 padding: '0.75rem 1rem',
                                                 background: 'rgba(255,255,255,0.03)',
                                                 borderRadius: '10px',
@@ -424,10 +571,15 @@ const Community = () => {
                                             }}
                                         >
                                             <div style={{
-                                                width: '36px', height: '36px', borderRadius: '50%',
+                                                width: '36px',
+                                                height: '36px',
+                                                borderRadius: '50%',
                                                 background: 'rgba(34,197,94,0.15)',
-                                                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                                                fontSize: '16px', flexShrink: 0,
+                                                display: 'flex',
+                                                alignItems: 'center',
+                                                justifyContent: 'center',
+                                                fontSize: '16px',
+                                                flexShrink: 0,
                                             }}>
                                                 ✅
                                             </div>

@@ -56,6 +56,15 @@ const createChallenge = async (req, res) => {
         newChallenge.status = getChallengeLifecycleStatus(newChallenge);
 
         await newChallenge.save();
+        const Participant = require("../models/participant");
+
+// Auto-add creator as approved participant
+        const creatorParticipant = new Participant({
+            challenge: newChallenge._id,
+            user: req.user.id,
+            status: "approved"
+        });
+await creatorParticipant.save();
         return res.status(201).json(withComputedStatus(newChallenge));
     } catch (err) {
         return res.status(500).json({

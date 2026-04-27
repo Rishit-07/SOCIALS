@@ -1,7 +1,7 @@
 const Checkin = require("../models/checkin");
 const Participant = require("../models/participant");
 const Challenge = require("../models/challenge");
-
+const { createCheckinNotification } = require("./notificationController");
 const checkIn = async (req, res) => {
     try {
         const { challengeId, note } = req.body;
@@ -37,6 +37,8 @@ const checkIn = async (req, res) => {
             note
         });
         await checkin.save();
+        const challenge = await Challenge.findById(challengeId);
+        await createCheckinNotification(req.user.id, challengeId, challenge?.title || "");
 
         return res.status(200).json({
             message: "Check-in successful"
