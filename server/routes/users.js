@@ -5,6 +5,7 @@ const User = require("../models/user");
 const { updateUserRarity } = require("../utils/rarityEngine");
 const multer = require("multer");
 const path = require("path");
+const bcrypt = require("bcryptjs");
 const Reward = require("../models/reward");
 const Participant = require("../models/participant");
 const Challenge = require("../models/challenge");
@@ -85,6 +86,61 @@ router.post("/claim-badge", protect, async (req, res) => {
         await newReward.save();
 
         return res.status(201).json({ message: "Badge claimed!", reward: newReward });
+    } catch (err) {
+        return res.status(500).json({ message: err.message });
+    }
+});
+
+router.put("/update-email", protect, async (req, res) => {
+    try {
+        const { email, password } = req.body;
+
+        // Verify password first
+        const user = await User.findById(req.user.id);
+        const isMatch = await bcrypt.compare(password, user.password);
+        if (!isMatch) {
+            return res.status(401).json({ message: "Incorrect password" });
+        }
+
+        // Check if email already taken
+        const existing = await User.findOne({ email });
+        if (existing) {
+            return res.status(400).json({ message: "Email already in use" });
+        }
+
+        const updated = await User.findByIdAndUpdate(
+            req.user.id,
+            { email },
+            { new: true }
+        ).select("-password");
+
+        return res.status(200).json({ user: updated });
+    } catch (err) {
+        return res.status(500).json({ message: err.message });
+    }
+});
+
+// Update password
+router.put("/update-password", protect, async (req, res) => {
+    try {
+        const { currentPassword, newPassword } = req.body;
+
+        const user = await User.findById(req.user.id);
+        const isMatch = await bcrypt.compare(currentPassword, user.password);
+        if (!isMatch) {
+            return res.status(401).json({ message: "Current password is incorrect" });
+        }
+
+        if (newPassword.length < 6) {
+            return res.status(400).json({ message: "Password must be at least 6 characters" });
+        }
+
+        const salt = await bcrypt.genSalt(10);
+        const hashed = await bcrypt.hash(newPassword, salt);
+
+        await User.findByIdAndUpdate(req.user.id, { password: hashed });
+
+        return res.status(200).json({ message: "Password updated successfully" });
     } catch (err) {
         return res.status(500).json({ message: err.message });
     }
