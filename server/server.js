@@ -16,6 +16,9 @@ app.use("/uploads", express.static(path.join(__dirname, "uploads")));
 const server = http.createServer(app);
 const io = socket(server);
 
+// Make io accessible to controllers
+app.locals.io = io;
+
 app.get("/", (req, res) => {
     res.send("API is running...");
 });

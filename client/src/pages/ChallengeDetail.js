@@ -24,6 +24,8 @@ const ChallengeDetail = () => {
     const [checkinSuccess, setCheckinSuccess] = useState('');
     const [checkinError, setCheckinError] = useState('');
     const [pendingParticipants, setPendingParticipants] = useState([]);
+    const [todaysCheckins, setTodaysCheckins] = useState({});
+    const [isCurrentUserParticipant, setIsCurrentUserParticipant] = useState(false);
     const messagesEndRef = useRef(null);
 
     const getId = (value) => {
@@ -49,6 +51,15 @@ const ChallengeDetail = () => {
         socketRef.current.on('new-join-request', () => {
             fetchPendingParticipants();
         });
+        socketRef.current.on('new-checkin', (data) => {
+            const participantId = getId(data.participantId);
+            setTodaysCheckins(prev => ({
+                ...prev,
+                [participantId]: true
+            }));
+            // Also refresh checkins to update the list if needed
+            fetchCheckins();
+        });
 
         return () => {
             socketRef.current.disconnect();
@@ -58,6 +69,28 @@ const ChallengeDetail = () => {
     useEffect(() => {
         messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
     }, [messages]);
+
+    // Process today's checkins
+    useEffect(() => {
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+
+        const todayCheckinsMap = {};
+        checkins.forEach(checkin => {
+            const checkinDate = new Date(checkin.createdAt);
+            checkinDate.setHours(0, 0, 0, 0);
+            if (checkinDate.getTime() === today.getTime()) {
+                const participantId = getId(checkin.participant?._id || checkin.participant);
+                todayCheckinsMap[participantId] = true;
+            }
+        });
+
+        setTodaysCheckins(todayCheckinsMap);
+
+        // Check if current user is a participant
+        const isParticipant = participants.some(p => getId(p.user?._id || p.user) === getId(user));
+        setIsCurrentUserParticipant(isParticipant);
+    }, [checkins, participants, user]);
 
     const fetchChallenge = async () => {
         try {
@@ -424,6 +457,79 @@ const ChallengeDetail = () => {
                                     </div>
                                 </div>
                             </div>
+
+                            {/* Participant Check-in Status - Only visible to participants */}
+                            {isCurrentUserParticipant && (
+                                <div style={{ ...glassStyle, marginTop: '1.5rem' }}>
+                                    <h3 style={{ color: '#fff', fontSize: '1rem', fontWeight: 600, marginBottom: '1rem' }}>
+                                        Today's Check-ins
+                                    </h3>
+                                    {participants.length === 0 ? (
+                                        <p style={{ color: 'rgba(255,255,255,0.3)', fontSize: '0.85rem' }}>No participants yet</p>
+                                    ) : (
+                                        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                                            {participants.map((p, i) => {
+                                                const participantId = getId(p._id);
+                                                const hasCheckedIn = todaysCheckins[participantId];
+                                                const isCurrentUser = getId(p.user?._id || p.user) === getId(user);
+
+                                                return (
+                                                    <motion.div
+                                                        key={p._id}
+                                                        initial={{ opacity: 0, x: -10 }}
+                                                        animate={{ opacity: 1, x: 0 }}
+                                                        transition={{ delay: i * 0.05 }}
+                                                        style={{
+                                                            display: 'flex',
+                                                            alignItems: 'center',
+                                                            gap: '1rem',
+                                                            padding: '0.75rem 1rem',
+                                                            background: hasCheckedIn ? 'rgba(34,197,94,0.08)' : 'rgba(255,255,255,0.03)',
+                                                            borderRadius: '8px',
+                                                            border: hasCheckedIn ? '1px solid rgba(34,197,94,0.3)' : '1px solid rgba(255,255,255,0.06)',
+                                                        }}
+                                                    >
+                                                        <div style={{
+                                                            width: '36px', height: '36px', borderRadius: '50%',
+                                                            background: 'rgba(239,68,68,0.2)', border: '1px solid rgba(239,68,68,0.3)',
+                                                            display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                                            color: '#ef4444', fontWeight: 700, fontSize: '13px', flexShrink: 0,
+                                                        }}>
+                                                            {p.user?.name?.[0]?.toUpperCase() || '?'}
+                                                        </div>
+                                                        <div style={{ flex: 1 }}>
+                                                            <div style={{ color: '#fff', fontSize: '0.9rem', fontWeight: 500 }}>
+                                                                {p.user?.name || 'Unknown'}
+                                                                {isCurrentUser && <span style={{ color: 'rgba(255,255,255,0.4)', fontSize: '0.8rem', marginLeft: '0.5rem' }}>(You)</span>}
+                                                            </div>
+                                                            <div style={{ color: 'rgba(255,255,255,0.4)', fontSize: '0.8rem' }}>
+                                                                {p.totalCheckIn} check-ins
+                                                            </div>
+                                                        </div>
+                                                        <motion.div
+                                                            initial={{ scale: 0, rotate: -180 }}
+                                                            animate={{ scale: 1, rotate: 0 }}
+                                                            transition={{ type: 'spring', stiffness: 300, damping: 15, delay: i * 0.05 + 0.2 }}
+                                                            style={{
+                                                                fontSize: '1.5rem',
+                                                                color: hasCheckedIn ? '#22c55e' : '#ef4444',
+                                                                fontWeight: 700,
+                                                                display: 'flex',
+                                                                alignItems: 'center',
+                                                                justifyContent: 'center',
+                                                                width: '32px',
+                                                                height: '32px',
+                                                            }}
+                                                        >
+                                                            {hasCheckedIn ? '✓' : '✗'}
+                                                        </motion.div>
+                                                    </motion.div>
+                                                );
+                                            })}
+                                        </div>
+                                    )}
+                                </div>
+                            )}
                         </motion.div>
                     )}
 

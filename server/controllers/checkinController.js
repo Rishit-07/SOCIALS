@@ -69,6 +69,14 @@ const checkIn = async (req, res) => {
             challenge?.title || "your challenge"
         );
 
+        // Emit real-time check-in event to the challenge room
+        const io = req.app.locals.io;
+        io.to(challengeId).emit('new-checkin', {
+            participantId: participant._id,
+            userName: req.user.name,
+            userId: req.user.id
+        });
+
         return res.status(200).json({ message: "Check-in successful" });
 
     } catch (err) {
