@@ -81,7 +81,7 @@ const ChallengeDetail = () => {
         fetchCheckins();
         fetchPendingParticipants();
 
-        socketRef.current = io('http://localhost:5000');
+        socketRef.current = io(process.env.REACT_APP_API_URL || 'http://localhost:5000');
         socketRef.current.emit('join-room', id);
         socketRef.current.on('receive-message', (message) => {
             setMessages(prev => [...prev, message]);
