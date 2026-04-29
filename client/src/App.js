@@ -13,6 +13,9 @@ import Community from './pages/Community';
 import EditProfile from './pages/EditProfile';
 import About from './pages/About';
 import Notifications from './pages/Notifications';
+import Privacy from './pages/Privacy';
+import Terms from './pages/Terms';
+import AppFooter from './components/AppFooter';
 
 const ProtectedRoute = ({ children }) => {
   const { user } = useContext(AuthContext);
@@ -58,7 +61,10 @@ const AppContent = () => {
         } />
 
       <Route path="/about" element={<About />} />
+      <Route path="/privacy" element={<Privacy />} />
+      <Route path="/terms" element={<Terms />} />
       </Routes>
+      <AppFooter isAuthenticated={!!user} />
       {user && <DockNav />}
     </BrowserRouter>
   );

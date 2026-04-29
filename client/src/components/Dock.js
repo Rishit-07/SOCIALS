@@ -1,5 +1,18 @@
-import { motion, useMotionValue, useSpring, useTransform, AnimatePresence } from "motion/react";
-import { Children, cloneElement, useEffect, useMemo, useRef, useState } from "react";
+import {
+  motion,
+  useMotionValue,
+  useSpring,
+  useTransform,
+  AnimatePresence,
+} from "motion/react";
+import {
+  Children,
+  cloneElement,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 
 import "./Dock.css";
 
@@ -29,15 +42,13 @@ function DockItem({
     [-distance, 0, distance],
     [baseItemSize, magnification, baseItemSize]
   );
+
   const size = useSpring(targetSize, spring);
 
   return (
     <motion.div
       ref={ref}
-      style={{
-        width: size,
-        height: size,
-      }}
+      style={{ width: size, height: size }}
       onHoverStart={() => isHovered.set(1)}
       onHoverEnd={() => isHovered.set(0)}
       onFocus={() => isHovered.set(1)}
@@ -99,27 +110,76 @@ export default function Dock({
 }) {
   const mouseX = useMotionValue(Infinity);
   const isHovered = useMotionValue(0);
+  const [showDock, setShowDock] = useState(false);
+  const [hoveringDock, setHoveringDock] = useState(false);
+  const hideTimeout = useRef(null);
+
+  useEffect(() => {
+    const handleMouseMove = (e) => {
+      const nearBottom = e.clientY >= window.innerHeight - 12;
+
+      if (nearBottom) {
+        clearTimeout(hideTimeout.current);
+        setShowDock(true);
+      } else if (!hoveringDock) {
+        clearTimeout(hideTimeout.current);
+        hideTimeout.current = setTimeout(() => {
+          setShowDock(false);
+        }, 700);
+      }
+    };
+
+    window.addEventListener("mousemove", handleMouseMove);
+
+    return () => {
+      window.removeEventListener("mousemove", handleMouseMove);
+      clearTimeout(hideTimeout.current);
+    };
+  }, [hoveringDock]);
 
   const maxHeight = useMemo(
     () => Math.max(dockHeight, magnification + magnification / 2 + 4),
     [magnification, dockHeight]
   );
+
   const heightRow = useTransform(isHovered, [0, 1], [panelHeight, maxHeight]);
   const height = useSpring(heightRow, spring);
 
   return (
-    <motion.div style={{ height, scrollbarWidth: "none" }} className="dock-outer">
+    <motion.div style={{ height }} className="dock-outer">
       <motion.div
+        initial={false}
+        animate={{
+          y: showDock ? 0 : 120,
+          opacity: showDock ? 1 : 0,
+        }}
+        transition={{
+          type: "spring",
+          stiffness: 180,
+          damping: 20,
+        }}
+        onMouseEnter={() => {
+          clearTimeout(hideTimeout.current);
+          setHoveringDock(true);
+          setShowDock(true);
+        }}
+        onMouseLeave={() => {
+          setHoveringDock(false);
+          hideTimeout.current = setTimeout(() => {
+            setShowDock(false);
+          }, 700);
+          isHovered.set(0);
+          mouseX.set(Infinity);
+        }}
         onMouseMove={({ pageX }) => {
           isHovered.set(1);
           mouseX.set(pageX);
         }}
-        onMouseLeave={() => {
-          isHovered.set(0);
-          mouseX.set(Infinity);
-        }}
         className={`dock-panel ${className}`.trim()}
-        style={{ height: panelHeight }}
+        style={{
+          height: panelHeight,
+          x: -62,
+        }}
         role="toolbar"
         aria-label="Application dock"
       >
