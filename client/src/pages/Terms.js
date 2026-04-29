@@ -31,7 +31,7 @@ const Terms = () => {
             fontWeight: 600,
           }}
         >
-          Back to Landing
+          Back to Home
         </motion.button>
 
         <motion.div
