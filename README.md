@@ -76,7 +76,7 @@ Unlike traditional productivity tools that are solo experiences, Socials makes a
 | **Database** | MongoDB, Mongoose |
 | **Authentication** | JWT, bcryptjs |
 | **Real-time** | Socket.io |
-| **Styling** | Tailwind CSS, Inline Styles |
+| **Styling** | CSS, Inline Styles |
 | **Animations** | Framer Motion, GSAP, OGL (Particles) |
 | **File Upload** | Multer |
 | **Deployment** | Vercel (Frontend), Render (Backend) |
