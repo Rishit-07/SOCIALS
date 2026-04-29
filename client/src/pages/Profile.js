@@ -17,6 +17,10 @@ const Profile = () => {
     const [challenges, setChallenges] = useState([]);
     const [loading, setLoading] = useState(true);
     const [deleteConfirm, setDeleteConfirm] = useState(null);
+    const [editChallenge, setEditChallenge] = useState(null);
+    const [editForm, setEditForm] = useState({});
+    const [editSaving, setEditSaving] = useState(false);
+    const [editStatus, setEditStatus] = useState({ type: '', message: '' });
     const [isEditingProfile, setIsEditingProfile] = useState(false);
     const [savingProfile, setSavingProfile] = useState(false);
     const [saveStatus, setSaveStatus] = useState({ type: '', message: '' });
@@ -117,6 +121,51 @@ const Profile = () => {
         return creatorId === currentUserId;
     };
 
+    const handleEditChallenge = (challenge) => {
+        setEditChallenge(challenge);
+        setEditForm({
+            title: challenge.title || '',
+            description: challenge.description || '',
+            duration: challenge.duration || 1,
+            category: challenge.category || '',
+            startDate: challenge.startDate ? new Date(challenge.startDate).toISOString().split('T')[0] : '',
+            isPublic: challenge.isPublic !== undefined ? challenge.isPublic : true,
+        });
+        setEditStatus({ type: '', message: '' });
+    };
+
+    const handleSaveChallenge = async (e) => {
+        e.preventDefault();
+        setEditSaving(true);
+        setEditStatus({ type: '', message: '' });
+
+        try {
+            const res = await API.put(`/api/challenges/${editChallenge._id}`, {
+                title: editForm.title,
+                description: editForm.description,
+                duration: editForm.duration,
+                category: editForm.category,
+                startDate: editForm.startDate,
+                isPublic: editForm.isPublic,
+            });
+
+            // Update the challenges list with the updated challenge
+            setChallenges(prev => prev.map(c => c._id === editChallenge._id ? res.data : c));
+            setEditStatus({ type: 'success', message: 'Challenge updated successfully!' });
+            setTimeout(() => {
+                setEditChallenge(null);
+                setEditForm({});
+            }, 1500);
+        } catch (err) {
+            setEditStatus({
+                type: 'error',
+                message: err.response?.data?.message || 'Failed to update challenge',
+            });
+        } finally {
+            setEditSaving(false);
+        }
+    };
+
     const handleDelete = async (challengeId) => {
         try {
             await API.delete(`/api/challenges/${challengeId}`);
@@ -189,9 +238,9 @@ const Profile = () => {
     };
 
     return (
-        <div style={{ minHeight: '100vh', width: '100%', background: '#0f1419', position: 'relative' }}>
+        <div style={{ minHeight: '100vh', width: '100%', background: '#0f1419', position: 'relative', overflow: 'hidden' }}>
             {/* Particles */}
-            <div style={{ position: 'fixed', top: 0, left: 0, width: '100%', height: '100%', zIndex: 0 }}>
+            <div style={{ position: 'fixed', top: 0, left: 0, width: '100%', height: '100%', zIndex: -1, pointerEvents: 'none' }}>
                 <Particles
                     particleCount={150}
                     particleSpread={15}
@@ -205,7 +254,7 @@ const Profile = () => {
                 />
             </div>
 
-            <div style={{ position: 'relative', zIndex: 10, maxWidth: '1200px', margin: '0 auto', padding: '2.5rem 1.5rem 160px 1.5rem' }}>
+            <div style={{ position: 'relative', zIndex: 5, maxWidth: '1200px', margin: '0 auto', padding: '2.5rem 1.5rem 160px 1.5rem' }}>
 
                 {/* Premium Hero */}
                 <motion.div
@@ -570,7 +619,7 @@ const Profile = () => {
                                     position: 'fixed', inset: 0,
                                     background: 'rgba(0,0,0,0.7)',
                                     backdropFilter: 'blur(6px)',
-                                    zIndex: 100,
+                                    zIndex: 40,
                                 }}
                             />
                             <motion.div
@@ -586,7 +635,7 @@ const Profile = () => {
                                     border: `1px solid ${selectedBadge.border}`,
                                     borderRadius: '24px',
                                     padding: '2.5rem',
-                                    zIndex: 101,
+                                    zIndex: 41,
                                     width: 'min(400px, 90%)',
                                     textAlign: 'center',
                                     boxShadow: `0 30px 80px rgba(0,0,0,0.6), 0 0 40px ${selectedBadge.bg}`,
@@ -794,29 +843,87 @@ const Profile = () => {
                                     }}
                                 >
                                     {/* Delete button */}
+                                    
                                     {canDeleteChallenge(challenge) && (
-                                        <motion.button
-                                            whileHover={{ scale: 1.1 }}
-                                            whileTap={{ scale: 0.9 }}
-                                            onClick={(e) => {
-                                                e.stopPropagation();
-                                                setDeleteConfirm(challenge);
-                                            }}
+                                        <div
                                             style={{
-                                                position: 'absolute', top: '0.75rem', right: '0.75rem',
-                                                background: 'rgba(239,68,68,0.15)',
-                                                border: '1px solid rgba(239,68,68,0.2)',
-                                                borderRadius: '6px', color: '#ef4444',
-                                                width: '28px', height: '28px',
-                                                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                                                cursor: 'pointer', fontSize: '0.8rem',
+                                                position: 'absolute',
+                                                top: '0.75rem',
+                                                right: '0.75rem',
+                                                display: 'flex',
+                                                flexDirection: 'column',
+                                                alignItems: 'flex-end',
+                                                gap: '0.45rem',
+                                                zIndex: 50
                                             }}
                                         >
-                                            🗑
-                                        </motion.button>
-                                    )}
+                                            <div style={{ display: 'flex', gap: '0.45rem' }}>
+                                                <motion.button
+                                                    whileHover={{ scale: 1.1 }}
+                                                    whileTap={{ scale: 0.9 }}
+                                                    onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        handleEditChallenge(challenge);
+                                                    }}
+                                                    style={{
+                                                        background: 'rgba(59,130,246,0.15)',
+                                                        border: '1px solid rgba(59,130,246,0.2)',
+                                                        borderRadius: '6px',
+                                                        color: '#3b82f6',
+                                                        width: '28px',
+                                                        height: '28px',
+                                                        display: 'flex',
+                                                        alignItems: 'center',
+                                                        justifyContent: 'center',
+                                                        cursor: 'pointer',
+                                                        fontSize: '0.75rem'
+                                                    }}
+                                                >
+                                                    ✏️
+                                                </motion.button>
 
-                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '0.75rem', paddingRight: '2rem' }}>
+                                                <motion.button
+                                                    whileHover={{ scale: 1.1 }}
+                                                    whileTap={{ scale: 0.9 }}
+                                                    onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        setDeleteConfirm(challenge);
+                                                    }}
+                                                    style={{
+                                                        background: 'rgba(239,68,68,0.15)',
+                                                        border: '1px solid rgba(239,68,68,0.2)',
+                                                        borderRadius: '6px',
+                                                        color: '#ef4444',
+                                                        width: '28px',
+                                                        height: '28px',
+                                                        display: 'flex',
+                                                        alignItems: 'center',
+                                                        justifyContent: 'center',
+                                                        cursor: 'pointer',
+                                                        fontSize: '0.8rem'
+                                                    }}
+                                                >
+                                                    🗑
+                                                </motion.button>
+                                            </div>
+
+                                            <span style={{
+                                                background: 'rgba(197, 60, 60, 0.12)',
+                                                color: '#c62d2d',
+                                                border: '1px solid rgba(226, 70, 70, 0.22)',
+                                                padding: '3px 10px',
+                                                borderRadius: '20px',
+                                                fontSize: '10px',
+                                                fontWeight: 600,
+                                                textTransform: 'uppercase'
+                                            }}>
+                                                {challenge.status}
+                                            </span>
+                                        </div>
+                                    )}
+                                
+
+                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '0.75rem' }}>
                                         <span style={{
                                             background: 'rgba(239,68,68,0.1)', color: '#ef4444',
                                             border: '1px solid rgba(239,68,68,0.2)',
@@ -824,12 +931,6 @@ const Profile = () => {
                                             fontSize: '11px', fontWeight: 500,
                                         }}>
                                             {challenge.category}
-                                        </span>
-                                        <span style={{
-                                            background: 'rgba(239,68,68,0.1)', color: '#ef4444',
-                                            padding: '3px 8px', borderRadius: '20px', fontSize: '11px',
-                                        }}>
-                                            {challenge.status}
                                         </span>
                                     </div>
                                     <h3 style={{ color: '#fff', fontSize: '0.95rem', fontWeight: 600, marginBottom: '0.4rem' }}>
@@ -881,6 +982,258 @@ const Profile = () => {
 
                 {/* Delete Confirmation Modal */}
                 <AnimatePresence>
+                    {editChallenge && (
+                        <>
+                            <motion.div
+                                initial={{ opacity: 0 }}
+                                animate={{ opacity: 1 }}
+                                exit={{ opacity: 0 }}
+                                onClick={() => {
+                                    setEditChallenge(null);
+                                    setEditForm({});
+                                    setEditStatus({ type: '', message: '' });
+                                }}
+                                style={{
+                                    position: 'fixed', inset: 0,
+                                    background: 'rgba(0,0,0,0.7)',
+                                    backdropFilter: 'blur(6px)',
+                                    zIndex: 50,
+                                }}
+                            />
+                            <motion.div
+                                initial={{ opacity: 0, scale: 0.9, y: 20 }}
+                                animate={{ opacity: 1, scale: 1, y: 0 }}
+                                exit={{ opacity: 0, scale: 0.9, y: 20 }}
+                                transition={{ type: 'spring', stiffness: 300, damping: 28 }}
+                                style={{
+                                    position: 'fixed',
+                                    top: '50%', left: '50%',
+                                    transform: 'translate(-50%, -50%)',
+                                    background: 'linear-gradient(145deg, #1a1020, #0f1419)',
+                                    border: '1px solid rgba(59,130,246,0.2)',
+                                    borderRadius: '16px',
+                                    padding: '2rem',
+                                    zIndex: 51,
+                                    width: 'min(500px, 90%)',
+                                    maxHeight: '85vh',
+                                    overflow: 'auto',
+                                }}
+                                onClick={e => e.stopPropagation()}
+                            >
+                                <h2 style={{ color: '#fff', fontSize: '1.25rem', fontWeight: 700, marginBottom: '1.5rem', margin: 0 }}>
+                                    ✏️ Edit Challenge
+                                </h2>
+                                
+                                <form onSubmit={handleSaveChallenge} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                                    {/* Title */}
+                                    <div>
+                                        <label style={{ color: 'rgba(255,255,255,0.75)', fontSize: '0.8rem', fontWeight: 500, display: 'block', marginBottom: '0.4rem' }}>
+                                            Challenge Title
+                                        </label>
+                                        <input
+                                            type="text"
+                                            value={editForm.title || ''}
+                                            onChange={(e) => setEditForm((prev) => ({ ...prev, title: e.target.value }))}
+                                            required
+                                            style={{
+                                                width: '100%',
+                                                background: 'rgba(255,255,255,0.05)',
+                                                border: '1px solid rgba(255,255,255,0.12)',
+                                                borderRadius: '10px',
+                                                color: '#fff',
+                                                padding: '0.8rem 0.9rem',
+                                                outline: 'none',
+                                                boxSizing: 'border-box',
+                                            }}
+                                            placeholder="Enter challenge title"
+                                        />
+                                    </div>
+
+                                    {/* Description */}
+                                    <div>
+                                        <label style={{ color: 'rgba(255,255,255,0.75)', fontSize: '0.8rem', fontWeight: 500, display: 'block', marginBottom: '0.4rem' }}>
+                                            Description
+                                        </label>
+                                        <textarea
+                                            value={editForm.description || ''}
+                                            onChange={(e) => setEditForm((prev) => ({ ...prev, description: e.target.value }))}
+                                            required
+                                            rows="4"
+                                            style={{
+                                                width: '100%',
+                                                background: 'rgba(255,255,255,0.05)',
+                                                border: '1px solid rgba(255,255,255,0.12)',
+                                                borderRadius: '10px',
+                                                color: '#fff',
+                                                padding: '0.8rem 0.9rem',
+                                                outline: 'none',
+                                                boxSizing: 'border-box',
+                                                fontFamily: 'inherit',
+                                                resize: 'vertical',
+                                            }}
+                                            placeholder="Enter challenge description"
+                                        />
+                                    </div>
+
+                                    {/* Category */}
+                                    <div>
+                                        <label style={{ color: 'rgba(255,255,255,0.75)', fontSize: '0.8rem', fontWeight: 500, display: 'block', marginBottom: '0.4rem' }}>
+                                            Category
+                                        </label>
+                                        <input
+                                            type="text"
+                                            value={editForm.category || ''}
+                                            onChange={(e) => setEditForm((prev) => ({ ...prev, category: e.target.value }))}
+                                            required
+                                            style={{
+                                                width: '100%',
+                                                background: 'rgba(255,255,255,0.05)',
+                                                border: '1px solid rgba(255,255,255,0.12)',
+                                                borderRadius: '10px',
+                                                color: '#fff',
+                                                padding: '0.8rem 0.9rem',
+                                                outline: 'none',
+                                                boxSizing: 'border-box',
+                                            }}
+                                            placeholder="e.g., Fitness, Learning, Health"
+                                        />
+                                    </div>
+
+                                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
+                                        {/* Duration */}
+                                        <div>
+                                            <label style={{ color: 'rgba(255,255,255,0.75)', fontSize: '0.8rem', fontWeight: 500, display: 'block', marginBottom: '0.4rem' }}>
+                                                Duration (days)
+                                            </label>
+                                            <input
+                                                type="number"
+                                                min="1"
+                                                value={editForm.duration || 1}
+                                                onChange={(e) => setEditForm((prev) => ({ ...prev, duration: parseInt(e.target.value) || 1 }))}
+                                                required
+                                                style={{
+                                                    width: '100%',
+                                                    background: 'rgba(255,255,255,0.05)',
+                                                    border: '1px solid rgba(255,255,255,0.12)',
+                                                    borderRadius: '10px',
+                                                    color: '#fff',
+                                                    padding: '0.8rem 0.9rem',
+                                                    outline: 'none',
+                                                    boxSizing: 'border-box',
+                                                }}
+                                            />
+                                        </div>
+
+                                        {/* Start Date */}
+                                        <div>
+                                            <label style={{ color: 'rgba(255,255,255,0.75)', fontSize: '0.8rem', fontWeight: 500, display: 'block', marginBottom: '0.4rem' }}>
+                                                Start Date
+                                            </label>
+                                            <input
+                                                type="date"
+                                                value={editForm.startDate || ''}
+                                                onChange={(e) => setEditForm((prev) => ({ ...prev, startDate: e.target.value }))}
+                                                required
+                                                style={{
+                                                    width: '100%',
+                                                    background: 'rgba(255,255,255,0.05)',
+                                                    border: '1px solid rgba(255,255,255,0.12)',
+                                                    borderRadius: '10px',
+                                                    color: '#fff',
+                                                    padding: '0.8rem 0.9rem',
+                                                    outline: 'none',
+                                                    boxSizing: 'border-box',
+                                                }}
+                                            />
+                                        </div>
+                                    </div>
+
+                                    {/* Public/Private */}
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                                        <input
+                                            type="checkbox"
+                                            id="isPublic"
+                                            checked={editForm.isPublic}
+                                            onChange={(e) => setEditForm((prev) => ({ ...prev, isPublic: e.target.checked }))}
+                                            style={{
+                                                width: '18px',
+                                                height: '18px',
+                                                cursor: 'pointer',
+                                            }}
+                                        />
+                                        <label htmlFor="isPublic" style={{ color: 'rgba(255,255,255,0.75)', fontSize: '0.85rem', fontWeight: 500, cursor: 'pointer', margin: 0 }}>
+                                            Make this challenge public (anyone can join)
+                                        </label>
+                                    </div>
+
+                                    {/* Status Message */}
+                                    {editStatus.message && (
+                                        <div
+                                            style={{
+                                                padding: '0.75rem',
+                                                borderRadius: '8px',
+                                                background: editStatus.type === 'success' ? 'rgba(34,197,94,0.1)' : 'rgba(239,68,68,0.1)',
+                                                color: editStatus.type === 'success' ? '#22c55e' : '#ef4444',
+                                                fontSize: '0.82rem',
+                                            }}
+                                        >
+                                            {editStatus.message}
+                                        </div>
+                                    )}
+
+                                    {/* Buttons */}
+                                    <div style={{ display: 'flex', gap: '0.75rem', marginTop: '0.5rem' }}>
+                                        <motion.button
+                                            whileHover={{ scale: 1.02 }}
+                                            whileTap={{ scale: 0.98 }}
+                                            type="submit"
+                                            disabled={editSaving}
+                                            style={{
+                                                flex: 1,
+                                                padding: '0.88rem',
+                                                borderRadius: '10px',
+                                                border: 'none',
+                                                background: editSaving ? 'rgba(59,130,246,0.6)' : '#3b82f6',
+                                                color: '#fff',
+                                                fontSize: '0.92rem',
+                                                fontWeight: 700,
+                                                cursor: editSaving ? 'not-allowed' : 'pointer',
+                                            }}
+                                        >
+                                            {editSaving ? 'Saving...' : 'Save Changes'}
+                                        </motion.button>
+                                        <motion.button
+                                            whileHover={{ scale: 1.02 }}
+                                            whileTap={{ scale: 0.98 }}
+                                            type="button"
+                                            onClick={() => {
+                                                setEditChallenge(null);
+                                                setEditForm({});
+                                                setEditStatus({ type: '', message: '' });
+                                            }}
+                                            style={{
+                                                flex: 1,
+                                                padding: '0.88rem',
+                                                borderRadius: '10px',
+                                                border: '1px solid rgba(255,255,255,0.2)',
+                                                background: 'transparent',
+                                                color: '#fff',
+                                                fontSize: '0.92rem',
+                                                fontWeight: 700,
+                                                cursor: 'pointer',
+                                            }}
+                                        >
+                                            Cancel
+                                        </motion.button>
+                                    </div>
+                                </form>
+                            </motion.div>
+                        </>
+                    )}
+                </AnimatePresence>
+
+                {/* Delete Confirmation Modal */}
+                <AnimatePresence>
                     {deleteConfirm && (
                         <>
                             <motion.div
@@ -891,7 +1244,7 @@ const Profile = () => {
                                 style={{
                                     position: 'fixed', inset: 0,
                                     background: 'rgba(0,0,0,0.6)',
-                                    zIndex: 100,
+                                    zIndex: 30,
                                 }}
                             />
                             <motion.div
@@ -907,7 +1260,7 @@ const Profile = () => {
                                     border: '1px solid rgba(239,68,68,0.3)',
                                     borderRadius: '16px',
                                     padding: '2rem',
-                                    zIndex: 101,
+                                    zIndex: 31,
                                     width: 'min(380px, 90%)',
                                     textAlign: 'center',
                                 }}

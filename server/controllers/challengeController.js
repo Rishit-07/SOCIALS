@@ -191,6 +191,33 @@ const getSingleChallenge = async (req, res) => {
     }
 };
 
+const updateChallenge = async (req, res) => {
+    try {
+        const challenge = await Challenge.findById(req.params.id);
+        if (!challenge) {
+            return res.status(404).json({ message: "Challenge not found" });
+        }
+        if (String(challenge.createdBy) !== String(req.user.id)) {
+            return res.status(401).json({ message: "Not authorized" });
+        }
+
+        const { title, description, duration, category, startDate, isPublic } = req.body;
+
+        // Update fields if provided
+        if (title !== undefined) challenge.title = title;
+        if (description !== undefined) challenge.description = description;
+        if (duration !== undefined) challenge.duration = Math.max(1, parseInt(duration, 10) || 1);
+        if (category !== undefined) challenge.category = category;
+        if (startDate !== undefined) challenge.startDate = startDate;
+        if (isPublic !== undefined) challenge.isPublic = isPublic;
+
+        await challenge.save();
+        return res.status(200).json(withComputedStatus(challenge));
+    } catch (err) {
+        return res.status(500).json({ message: err.message });
+    }
+};
+
 const deleteChallenge = async (req, res) => {
     try {
         const challenge = await Challenge.findById(req.params.id);
@@ -207,4 +234,4 @@ const deleteChallenge = async (req, res) => {
     }
 };
 
-module.exports = { createChallenge, joinChallenge, getAllChallenge, getSingleChallenge, deleteChallenge };
+module.exports = { createChallenge, joinChallenge, getAllChallenge, getSingleChallenge, updateChallenge, deleteChallenge };

@@ -334,7 +334,7 @@ const Dashboard = () => {
     );
 
        return (
-    <div style={{ minHeight: '100vh', width: '100%', background: '#0f1419', position: 'relative' }}>
+    <div style={{ minHeight: '100vh', width: '100%', background: '#0f1419', position: 'relative', overflow: 'hidden' }}>
         <motion.div
             style={{
                 position: 'fixed',
@@ -345,13 +345,13 @@ const Dashboard = () => {
                 height: '60vw',
                 borderRadius: '999px',
                 background: 'radial-gradient(circle, rgba(239,68,68,0.2) 0%, rgba(239,68,68,0.05) 40%, transparent 70%)',
-                zIndex: 1,
+                zIndex: 0,
                 pointerEvents: 'none',
                 scale: glowScale,
             }}
         />
 
-        <div style={{ position: 'fixed', top: 0, left: 0, width: '100%', height: '100%', zIndex: 0 }}>
+        <div style={{ position: 'fixed', top: 0, left: 0, width: '100%', height: '100%', zIndex: -1, pointerEvents: 'none' }}>
             <Particles
                 particleCount={200}
                 particleSpread={15}
@@ -365,7 +365,7 @@ const Dashboard = () => {
             />
         </div>
 
-        <div style={{ position: 'relative', zIndex: 10, maxWidth: '900px', margin: '0 auto', padding: '3rem 1.5rem 160px 1.5rem' }}>
+        <div style={{ position: 'relative', zIndex: 5, maxWidth: '900px', margin: '0 auto', padding: '3rem 1.5rem 160px 1.5rem' }}>
 
             {/* Hero */}
             <motion.div
@@ -681,7 +681,7 @@ const Dashboard = () => {
                     animate={{ opacity: 1 }}
                     exit={{ opacity: 0 }}
                     style={{
-                        position: 'fixed', inset: 0, zIndex: 120,
+                        position: 'fixed', inset: 0, zIndex: 50,
                         background: 'rgba(0,0,0,0.55)',
                         backdropFilter: 'blur(6px)',
                         display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1rem',
@@ -769,7 +769,7 @@ const Dashboard = () => {
                     style={{
                         position: 'fixed',
                         inset: 0,
-                        zIndex: 130,
+                        zIndex: 60,
                         background: 'rgba(0,0,0,0.55)',
                         backdropFilter: 'blur(6px)',
                         display: 'flex',
@@ -892,7 +892,8 @@ const Dashboard = () => {
                         backdropFilter: 'blur(8px)',
                         display: 'flex', flexDirection: 'column',
                         alignItems: 'center', justifyContent: 'center',
-                        zIndex: 9999,
+                        zIndex: 1000,
+                        pointerEvents: 'auto',
                     }}
                 >
                     <motion.div
