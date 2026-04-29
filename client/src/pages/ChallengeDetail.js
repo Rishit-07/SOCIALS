@@ -1,4 +1,4 @@
-import { useState, useEffect, useContext, useRef } from 'react';
+import { useState, useEffect, useContext, useRef, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { AuthContext } from '../context/AuthContext';
@@ -37,6 +37,44 @@ const ChallengeDetail = () => {
         return String(value);
     };
 
+    const fetchChallenge = useCallback(async () => {
+        try {
+            const res = await API.get(`/api/challenges/${id}`);
+            setChallenge(res.data);
+        } catch (err) {
+            console.error(err);
+        } finally {
+            setLoading(false);
+        }
+    }, [id]);
+
+    const fetchPendingParticipants = useCallback(async () => {
+        try {
+            const res = await API.get(`/api/participants/${id}/pending`);
+            setPendingParticipants(res.data);
+        } catch (err) {
+            console.error(err);
+        }
+    }, [id]);
+
+    const fetchParticipants = useCallback(async () => {
+        try {
+            const res = await API.get(`/api/participants/${id}`);
+            setParticipants(res.data);
+        } catch (err) {
+            console.error(err);
+        }
+    }, [id]);
+
+    const fetchCheckins = useCallback(async () => {
+        try {
+            const res = await API.get(`/api/checkins/${id}`);
+            setCheckins(res.data);
+        } catch (err) {
+            console.error(err);
+        }
+    }, [id]);
+
     useEffect(() => {
         fetchChallenge();
         fetchParticipants();
@@ -64,7 +102,7 @@ const ChallengeDetail = () => {
         return () => {
             socketRef.current.disconnect();
         };
-    }, [id]);
+    }, [fetchChallenge, fetchParticipants, fetchCheckins, fetchPendingParticipants, id]);
 
     useEffect(() => {
         messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -91,44 +129,6 @@ const ChallengeDetail = () => {
         const isParticipant = participants.some(p => getId(p.user?._id || p.user) === getId(user));
         setIsCurrentUserParticipant(isParticipant);
     }, [checkins, participants, user]);
-
-    const fetchChallenge = async () => {
-        try {
-            const res = await API.get(`/api/challenges/${id}`);
-            setChallenge(res.data);
-        } catch (err) {
-            console.error(err);
-        } finally {
-            setLoading(false);
-        }
-    };
-
-    const fetchPendingParticipants = async () => {
-        try {
-            const res = await API.get(`/api/participants/${id}/pending`);
-            setPendingParticipants(res.data);
-        } catch (err) {
-            console.error(err);
-        }
-    };
-
-    const fetchParticipants = async () => {
-        try {
-            const res = await API.get(`/api/participants/${id}`);
-            setParticipants(res.data);
-        } catch (err) {
-            console.error(err);
-        }
-    };
-
-    const fetchCheckins = async () => {
-        try {
-            const res = await API.get(`/api/checkins/${id}`);
-            setCheckins(res.data);
-        } catch (err) {
-            console.error(err);
-        }
-    };
 
     const handleCheckin = async (e) => {
         e.preventDefault();

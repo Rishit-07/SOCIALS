@@ -190,7 +190,7 @@ const TextType = ({
                 } else {
                     timeout = setTimeout(() => {
                         setDisplayedText((prev) => prev.slice(0, -1));
-                    }, deletingSpeed);
+                    }, getDeletingSpeed(currentTextIndex));
                 }
             } else {
                 if (currentCharIndex < processedText.length) {
