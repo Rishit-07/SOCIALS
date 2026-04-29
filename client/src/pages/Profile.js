@@ -89,6 +89,14 @@ const Profile = () => {
 
     const displayedAvatar = avatarPreviewUrl || getAvatarUrl(user?.avatar);
 
+    const currentUserId = String(user?.id || user?._id || '');
+
+    const canDeleteChallenge = (challenge) => {
+        if (!challenge) return false;
+        const creatorId = String(challenge.createdBy?._id || challenge.createdBy || '');
+        return creatorId === currentUserId;
+    };
+
     const handleDelete = async (challengeId) => {
         try {
             await API.delete(`/api/challenges/${challengeId}`);
@@ -766,25 +774,27 @@ const Profile = () => {
                                     }}
                                 >
                                     {/* Delete button */}
-                                    <motion.button
-                                        whileHover={{ scale: 1.1 }}
-                                        whileTap={{ scale: 0.9 }}
-                                        onClick={(e) => {
-                                            e.stopPropagation();
-                                            setDeleteConfirm(challenge);
-                                        }}
-                                        style={{
-                                            position: 'absolute', top: '0.75rem', right: '0.75rem',
-                                            background: 'rgba(239,68,68,0.15)',
-                                            border: '1px solid rgba(239,68,68,0.2)',
-                                            borderRadius: '6px', color: '#ef4444',
-                                            width: '28px', height: '28px',
-                                            display: 'flex', alignItems: 'center', justifyContent: 'center',
-                                            cursor: 'pointer', fontSize: '0.8rem',
-                                        }}
-                                    >
-                                        🗑
-                                    </motion.button>
+                                    {canDeleteChallenge(challenge) && (
+                                        <motion.button
+                                            whileHover={{ scale: 1.1 }}
+                                            whileTap={{ scale: 0.9 }}
+                                            onClick={(e) => {
+                                                e.stopPropagation();
+                                                setDeleteConfirm(challenge);
+                                            }}
+                                            style={{
+                                                position: 'absolute', top: '0.75rem', right: '0.75rem',
+                                                background: 'rgba(239,68,68,0.15)',
+                                                border: '1px solid rgba(239,68,68,0.2)',
+                                                borderRadius: '6px', color: '#ef4444',
+                                                width: '28px', height: '28px',
+                                                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                                cursor: 'pointer', fontSize: '0.8rem',
+                                            }}
+                                        >
+                                            🗑
+                                        </motion.button>
+                                    )}
 
                                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '0.75rem', paddingRight: '2rem' }}>
                                         <span style={{

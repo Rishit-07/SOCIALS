@@ -12,7 +12,9 @@ import {
   useMemo,
   useRef,
   useState,
+  useContext,
 } from "react";
+import { DockContext } from "../context/DockContext";
 
 import "./Dock.css";
 
@@ -113,6 +115,14 @@ export default function Dock({
   const [showDock, setShowDock] = useState(false);
   const [hoveringDock, setHoveringDock] = useState(false);
   const hideTimeout = useRef(null);
+  const dockContext = useContext(DockContext);
+
+  // Update DockContext when showDock changes
+  useEffect(() => {
+    if (dockContext) {
+      dockContext.updateDockVisibility(showDock);
+    }
+  }, [showDock, dockContext]);
 
   useEffect(() => {
     const handleMouseMove = (e) => {

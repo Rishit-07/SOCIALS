@@ -21,6 +21,8 @@ const Dashboard = () => {
     const [leaving, setLeaving] = useState(false);
     const [leaveError, setLeaveError] = useState('');
     const [showLoadingScreen, setShowLoadingScreen] = useState(false);
+    const [showInactiveChallengeDialog, setShowInactiveChallengeDialog] = useState(false);
+    const [inactiveChallenge, setInactiveChallenge] = useState(null);
 
     const { scrollYProgress } = useScroll();
     const heroY = useTransform(scrollYProgress, [0, 0.35], [0, -50]);
@@ -222,14 +224,20 @@ const Dashboard = () => {
         setJoinError('');
         setJoinSuccess('');
 
+        const joinedChallenge = allChallenges.find(
+            (challenge) =>
+                String(challenge.inviteCode || '').toUpperCase() === String(inviteCode).toUpperCase()
+        );
+
+        if (joinedChallenge?.status === 'inactive') {
+            setInactiveChallenge(joinedChallenge);
+            setShowInactiveChallengeDialog(true);
+            return;
+        }
+
         try {
             const res = await API.post('/api/challenges/join', { inviteCode });
             setJoinSuccess(res.data.message);
-
-            const joinedChallenge = allChallenges.find(
-                (challenge) =>
-                    String(challenge.inviteCode || '').toUpperCase() === String(inviteCode).toUpperCase()
-            );
 
             if (joinedChallenge) {
                 addToActiveChallenges(joinedChallenge, res.data?.status || 'approved');
@@ -241,7 +249,14 @@ const Dashboard = () => {
             await fetchChallenges();
             setTimeout(() => window.location.reload(), 500);
         } catch (err) {
-            setJoinError(err.response?.data?.message || 'Invalid invite code');
+            const serverMessage = err.response?.data?.message || 'Invalid invite code';
+            if (/completed|inactive/i.test(serverMessage)) {
+                setInactiveChallenge(joinedChallenge || null);
+                setShowInactiveChallengeDialog(true);
+                return;
+            }
+
+            setJoinError(serverMessage);
         }
     };
 
@@ -257,6 +272,11 @@ const Dashboard = () => {
         setShowLeaveDialog(false);
         setChallengeToLeave(null);
         setLeaveError('');
+    };
+
+    const closeInactiveChallengeDialog = () => {
+        setShowInactiveChallengeDialog(false);
+        setInactiveChallenge(null);
     };
 
     const confirmLeaveChallenge = async () => {
@@ -626,34 +646,6 @@ const Dashboard = () => {
                                     >
                                         View →
                                     </motion.button>
-                                    {getId(challenge.createdBy) !== getId(user) && (
-                                        <motion.button
-                                            whileHover={{ scale: 1.05 }}
-                                            whileTap={{ scale: 0.95 }}
-                                            onClick={async () => {
-                                                try {
-                                                    const res = await API.post('/api/challenges/join', { inviteCode: challenge.inviteCode });
-                                                    setJoinSuccess(res.data.message);
-                                                    addToActiveChallenges(challenge, res.data?.status || 'approved');
-                                                    sessionStorage.setItem('dashboardReloading', 'true');
-                                                    setShowLoadingScreen(true);
-                                                    await fetchChallenges();
-                                                    setTimeout(() => window.location.reload(), 500);
-                                                } catch (err) {
-                                                    setJoinError(err.response?.data?.message || 'Could not join');
-                                                    setTimeout(() => setJoinError(''), 3000);
-                                                }
-                                            }}
-                                            style={{
-                                                flex: 1, padding: '0.6rem',
-                                                background: '#ef4444', border: 'none',
-                                                borderRadius: '8px', color: '#fff',
-                                                fontSize: '0.85rem', fontWeight: 500, cursor: 'pointer',
-                                            }}
-                                        >
-                                            Join
-                                        </motion.button>
-                                    )}
                                 </div>
                             </motion.div>
                         ))}
@@ -741,6 +733,125 @@ const Dashboard = () => {
                                 }}
                             >
                                 {leaving ? 'Leaving...' : 'Yes, Leave'}
+                            </motion.button>
+                        </div>
+                    </motion.div>
+                </motion.div>
+            )}
+        </AnimatePresence>
+
+        {/* Inactive Challenge Dialog */}
+        <AnimatePresence>
+            {showInactiveChallengeDialog && (
+                <motion.div
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    exit={{ opacity: 0 }}
+                    style={{
+                        position: 'fixed',
+                        inset: 0,
+                        zIndex: 130,
+                        background: 'rgba(0,0,0,0.55)',
+                        backdropFilter: 'blur(6px)',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        padding: '1rem',
+                    }}
+                    onClick={closeInactiveChallengeDialog}
+                >
+                    <motion.div
+                        initial={{ opacity: 0, y: 36, scale: 0.88 }}
+                        animate={{ opacity: 1, y: 0, scale: 1 }}
+                        exit={{ opacity: 0, y: 18, scale: 0.94 }}
+                        transition={{ type: 'spring', stiffness: 260, damping: 22 }}
+                        style={{
+                            width: 'min(480px, 100%)',
+                            borderRadius: '18px',
+                            border: '1px solid rgba(239,68,68,0.28)',
+                            background: 'linear-gradient(145deg, rgba(20,24,30,0.96), rgba(15,20,25,0.96))',
+                            boxShadow: '0 28px 80px rgba(0,0,0,0.45)',
+                            padding: '1.5rem',
+                            textAlign: 'center',
+                        }}
+                        onClick={(e) => e.stopPropagation()}
+                    >
+                        <motion.div
+                            initial={{ scale: 0.7, rotate: -12 }}
+                            animate={{ scale: 1, rotate: 0 }}
+                            transition={{ type: 'spring', stiffness: 300, damping: 18, delay: 0.1 }}
+                            style={{
+                                width: '56px',
+                                height: '56px',
+                                borderRadius: '16px',
+                                margin: '0 auto 0.9rem',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                background: 'rgba(239,68,68,0.14)',
+                                border: '1px solid rgba(239,68,68,0.3)',
+                                color: '#ef4444',
+                                fontSize: '1.5rem',
+                            }}
+                        >
+                            ⚠️
+                        </motion.div>
+
+                        <h3 style={{ color: '#fff', fontSize: '1.15rem', fontWeight: 700, marginBottom: '0.6rem' }}>
+                            Sorry, this challenge has been completed
+                        </h3>
+
+                        <p style={{ color: 'rgba(255,255,255,0.55)', fontSize: '0.9rem', lineHeight: 1.6, marginBottom: '1.25rem' }}>
+                            {inactiveChallenge?.title
+                                ? `"${inactiveChallenge.title}" is no longer active.`
+                                : 'This challenge is no longer active.'}{' '}
+                            Browse more challenges on the community page or create your own.
+                        </p>
+
+                        <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap' }}>
+                            <motion.button
+                                whileHover={{ scale: 1.03 }}
+                                whileTap={{ scale: 0.97 }}
+                                onClick={() => {
+                                    closeInactiveChallengeDialog();
+                                    navigate('/community');
+                                }}
+                                style={{
+                                    flex: 1,
+                                    minWidth: '160px',
+                                    padding: '0.8rem 1rem',
+                                    background: '#ef4444',
+                                    border: 'none',
+                                    borderRadius: '10px',
+                                    color: '#fff',
+                                    fontSize: '0.9rem',
+                                    fontWeight: 700,
+                                    cursor: 'pointer',
+                                }}
+                            >
+                                Browse Community
+                            </motion.button>
+                            <motion.button
+                                whileHover={{ scale: 1.03 }}
+                                whileTap={{ scale: 0.97 }}
+                                onClick={() => {
+                                    closeInactiveChallengeDialog();
+                                    navigate('/create');
+                                }}
+                                style={{
+                                    flex: 1,
+                                    minWidth: '160px',
+                                    padding: '0.8rem 1rem',
+                                    background: 'transparent',
+                                    border: '1px solid rgba(255,255,255,0.16)',
+                                    borderRadius: '10px',
+                                    color: '#fff',
+                                    fontSize: '0.9rem',
+                                    fontWeight: 600,
+                                    cursor: 'pointer',
+                                }}
+                            >
+                                Create One
                             </motion.button>
                         </div>
                     </motion.div>

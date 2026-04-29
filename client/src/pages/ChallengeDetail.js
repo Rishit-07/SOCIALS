@@ -180,6 +180,37 @@ const ChallengeDetail = () => {
     };
 
     const isOwner = challenge && getId(challenge.createdBy) === getId(user);
+    const currentUserParticipant = participants.find(
+        (participant) => getId(participant.user?._id || participant.user) === getId(user)
+    );
+    const currentUserCheckins = currentUserParticipant
+        ? checkins.filter(
+            (checkin) => getId(checkin.participant?._id || checkin.participant) === getId(currentUserParticipant._id)
+        )
+        : [];
+    const currentUserJoinDate = currentUserParticipant?.createdAt
+        ? new Date(currentUserParticipant.createdAt)
+        : null;
+    if (currentUserJoinDate) {
+        currentUserJoinDate.setHours(0, 0, 0, 0);
+    }
+    const currentUserTimelineDays = challenge
+        ? Array.from({ length: challenge.duration }, (_, i) => {
+            const date = new Date(challenge.startDate);
+            date.setHours(0, 0, 0, 0);
+            date.setDate(date.getDate() + i);
+            return !currentUserJoinDate || date >= currentUserJoinDate;
+        }).filter(Boolean).length
+        : 0;
+    const currentUserProgressCount = currentUserCheckins.filter((checkin) => {
+        if (!currentUserJoinDate) return true;
+        const checkinDate = new Date(checkin.createdAt);
+        checkinDate.setHours(0, 0, 0, 0);
+        return checkinDate >= currentUserJoinDate;
+    }).length;
+    const currentUserProgressPercent = currentUserTimelineDays
+        ? Math.min(100, Math.round((currentUserProgressCount / currentUserTimelineDays) * 100))
+        : 0;
 
     const tabs = isOwner
         ? ['checkin', 'members', 'chat', 'leaderboard', 'requests']
@@ -387,17 +418,26 @@ const ChallengeDetail = () => {
                                         date.setHours(0, 0, 0, 0);
                                         date.setDate(date.getDate() + i);
 
+                                        const joinDate = currentUserParticipant?.createdAt
+                                            ? new Date(currentUserParticipant.createdAt)
+                                            : null;
+                                        if (joinDate) {
+                                            joinDate.setHours(0, 0, 0, 0);
+                                        }
+
                                         const today = new Date();
                                         today.setHours(0, 0, 0, 0);
 
                                         const dateStr = date.toDateString();
-                                        const checked = checkins.some(c => {
+                                        const checked = currentUserCheckins.some(c => {
                                             const checkinDate = new Date(c.createdAt);
                                             checkinDate.setHours(0, 0, 0, 0);
                                             return checkinDate.toDateString() === dateStr;
                                         });
+                                        const isBeforeJoin = joinDate && date < joinDate;
                                         const isPast = date < today;
                                         const isToday = date.getTime() === today.getTime();
+                                        const shouldShowMissedState = isPast && !isToday && !isBeforeJoin;
 
                                         return (
                                             <motion.div
@@ -414,12 +454,12 @@ const ChallengeDetail = () => {
                                                         ? '2px dashed rgba(239,68,68,0.5)'
                                                         : checked
                                                         ? '1px solid rgba(34,197,94,0.4)'
-                                                        : isPast
+                                                        : shouldShowMissedState
                                                         ? '1px solid rgba(239,68,68,0.2)'
                                                         : '1px solid rgba(255,255,255,0.06)',
                                                     background: checked
                                                         ? 'rgba(34,197,94,0.08)'
-                                                        : isPast && !isToday
+                                                        : shouldShowMissedState
                                                         ? 'rgba(239,68,68,0.08)'
                                                         : 'rgba(255,255,255,0.03)',
                                                 }}
@@ -427,8 +467,8 @@ const ChallengeDetail = () => {
                                                 <div style={{ color: 'rgba(255,255,255,0.5)', fontSize: '0.7rem', marginBottom: '4px' }}>
                                                     {date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
                                                 </div>
-                                                <div style={{ fontSize: '1rem', color: checked ? '#22c55e' : isPast ? '#ef4444' : 'rgba(255,255,255,0.3)' }}>
-                                                    {checked ? '✓' : isPast ? '✗' : '·'}
+                                                <div style={{ fontSize: '1rem', color: checked ? '#22c55e' : shouldShowMissedState ? '#ef4444' : 'rgba(255,255,255,0.3)' }}>
+                                                    {checked ? '✓' : shouldShowMissedState ? '✗' : ' '}
                                                 </div>
                                             </motion.div>
                                         );
@@ -440,20 +480,20 @@ const ChallengeDetail = () => {
                                     <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.5rem' }}>
                                         <span style={{ color: 'rgba(255,255,255,0.5)', fontSize: '0.8rem' }}>Progress</span>
                                         <span style={{ color: '#ef4444', fontSize: '0.8rem', fontWeight: 600 }}>
-                                            {Math.round((checkins.length / challenge.duration) * 100)}%
+                                            {currentUserProgressPercent}%
                                         </span>
                                     </div>
                                     <div style={{ height: '6px', background: 'rgba(255,255,255,0.08)', borderRadius: '3px', overflow: 'hidden' }}>
                                         <motion.div
                                             initial={{ width: 0 }}
-                                            animate={{ width: `${(checkins.length / challenge.duration) * 100}%` }}
+                                            animate={{ width: `${currentUserProgressPercent}%` }}
                                             transition={{ duration: 1, ease: 'easeOut' }}
                                             style={{ height: '100%', background: '#ef4444', borderRadius: '3px' }}
                                         />
                                     </div>
                                     <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '0.4rem' }}>
-                                        <span style={{ color: 'rgba(255,255,255,0.3)', fontSize: '0.75rem' }}>{checkins.length} check-ins</span>
-                                        <span style={{ color: 'rgba(255,255,255,0.3)', fontSize: '0.75rem' }}>{challenge.duration} days total</span>
+                                        <span style={{ color: 'rgba(255,255,255,0.3)', fontSize: '0.75rem' }}>{currentUserProgressCount} check-ins</span>
+                                        <span style={{ color: 'rgba(255,255,255,0.3)', fontSize: '0.75rem' }}>{currentUserTimelineDays} days total</span>
                                     </div>
                                 </div>
                             </div>

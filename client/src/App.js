@@ -1,6 +1,7 @@
 import { useContext } from "react";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import AuthProvider, { AuthContext } from "./context/AuthContext";
+import { DockProvider } from "./context/DockContext";
 import Landing from "./pages/Landing";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
@@ -9,6 +10,7 @@ import CreateChallenge from "./pages/CreateChallenge";
 import ChallengeDetail from "./pages/ChallengeDetail";
 import Profile from "./pages/Profile";
 import DockNav from "./components/DockNav";
+import DockHint from "./components/DockHint";
 import Community from './pages/Community';
 import EditProfile from './pages/EditProfile';
 import About from './pages/About';
@@ -65,14 +67,21 @@ const AppContent = () => {
       <Route path="/terms" element={<Terms />} />
       </Routes>
       <AppFooter isAuthenticated={!!user} />
-      {user && <DockNav />}
+      {user && (
+        <>
+          <DockNav />
+          <DockHint />
+        </>
+      )}
     </BrowserRouter>
   );
 };
 const App = () => {
   return (
     <AuthProvider>
-      <AppContent />
+      <DockProvider>
+        <AppContent />
+      </DockProvider>
     </AuthProvider>
   );
 };

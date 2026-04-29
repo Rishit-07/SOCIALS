@@ -444,8 +444,7 @@ const Community = () => {
                                                             navigate(`/challenge/${challenge._id}`);
                                                         }}
                                                         style={{
-                                                            flex: String(challenge.createdBy?._id || challenge.createdBy) !== String(user?.id || user?._id) ? 1 : 'unset',
-                                                            width: String(challenge.createdBy?._id || challenge.createdBy) === String(user?.id || user?._id) ? '100%' : 'auto',
+                                                            flex: 1,
                                                             padding: '0.6rem',
                                                             background: 'transparent',
                                                             border: '1px solid rgba(255,255,255,0.15)',
@@ -457,30 +456,6 @@ const Community = () => {
                                                     >
                                                         View →
                                                     </motion.button>
-
-                                                    {String(challenge.createdBy?._id || challenge.createdBy) !== String(user?.id || user?._id) && (
-                                                        <motion.button
-                                                            whileHover={{ scale: 1.05 }}
-                                                            whileTap={{ scale: 0.95 }}
-                                                            onClick={(e) => {
-                                                                e.stopPropagation();
-                                                                handleJoin(challenge);
-                                                            }}
-                                                            style={{
-                                                                flex: 1,
-                                                                padding: '0.6rem',
-                                                                background: '#e84a3f',
-                                                                border: 'none',
-                                                                borderRadius: '8px',
-                                                                color: '#fff',
-                                                                fontSize: '0.82rem',
-                                                                fontWeight: 700,
-                                                                cursor: 'pointer',
-                                                            }}
-                                                        >
-                                                            Join
-                                                        </motion.button>
-                                                    )}
                                                 </div>
                                             </div>
                                         </>

@@ -82,6 +82,10 @@ const joinChallenge = async (req, res) => {
             return res.status(404).json({ message: "Challenge not found" });
         }
 
+        if (getChallengeLifecycleStatus(challenge) === "inactive") {
+            return res.status(400).json({ message: "This challenge has been completed and can no longer be joined." });
+        }
+
         const existingParticipant = await Participant.findOne({
             challenge: challenge._id,
             user: req.user.id,
