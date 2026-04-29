@@ -1257,14 +1257,15 @@ const Profile = () => {
                                 transition={{ type: 'spring', bounce: 0.3 }}
                                 style={{
                                     position: 'fixed',
-                                    top: '50%', left: '50%',
-                                    transform: 'translate(-50%, -50%)',
+                                    inset: '1.5rem',
+                                    margin: 'auto',
                                     background: '#0f1419',
                                     border: '1px solid rgba(239,68,68,0.3)',
                                     borderRadius: '16px',
                                     padding: '2rem',
                                     zIndex: 31,
                                     width: 'min(380px, 90%)',
+                                    height: 'fit-content',
                                     textAlign: 'center',
                                 }}
                             >
