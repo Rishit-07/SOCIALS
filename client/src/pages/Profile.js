@@ -997,7 +997,7 @@ const Profile = () => {
                                     position: 'fixed', inset: 0,
                                     background: 'rgba(0,0,0,0.7)',
                                     backdropFilter: 'blur(6px)',
-                                    zIndex: 50,
+                                    zIndex: 1200,
                                 }}
                             />
                             <motion.div
@@ -1007,16 +1007,19 @@ const Profile = () => {
                                 transition={{ type: 'spring', stiffness: 300, damping: 28 }}
                                 style={{
                                     position: 'fixed',
-                                    top: '50%', left: '50%',
-                                    transform: 'translate(-50%, -50%)',
+                                    inset: '1.5rem',
+                                    margin: 'auto',
                                     background: 'linear-gradient(145deg, #1a1020, #0f1419)',
                                     border: '1px solid rgba(59,130,246,0.2)',
                                     borderRadius: '16px',
                                     padding: '2rem',
-                                    zIndex: 51,
+                                    zIndex: 1201,
                                     width: 'min(500px, 90%)',
-                                    maxHeight: '85vh',
+                                    height: 'fit-content',
+                                    maxHeight: 'calc(100vh - 3rem)',
                                     overflow: 'auto',
+                                    boxSizing: 'border-box',
+                                    scrollbarGutter: 'stable',
                                 }}
                                 onClick={e => e.stopPropagation()}
                             >
@@ -1193,7 +1196,7 @@ const Profile = () => {
                                                 padding: '0.88rem',
                                                 borderRadius: '10px',
                                                 border: 'none',
-                                                background: editSaving ? 'rgba(59,130,246,0.6)' : '#3b82f6',
+                                                background: editSaving ? 'rgba(239,68,68,0.6)' : '#ef4444',
                                                 color: '#fff',
                                                 fontSize: '0.92rem',
                                                 fontWeight: 700,
