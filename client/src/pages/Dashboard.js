@@ -398,7 +398,7 @@ const Dashboard = () => {
                             background: 'rgba(209, 1, 1, 0.12)',
                             border: '1px solid rgba(127, 1, 1, 0.35)',
                             borderRadius: '10px',
-                            color: '#ff0000',
+                            color: '#fb3a3a',
                             fontSize: '0.85rem',
                             fontWeight: 700,
                             cursor: 'pointer',
