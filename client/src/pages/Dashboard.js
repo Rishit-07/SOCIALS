@@ -388,6 +388,25 @@ const Dashboard = () => {
                 <p style={{ color: 'rgba(255,255,255,0.5)', fontSize: '0.95rem' }}>
                     Stay consistent. Stay accountable. Keep competing.
                 </p>
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.75rem', marginTop: '1rem' }}>
+                    <motion.button
+                        whileHover={{ scale: 1.03, y: -2 }}
+                        whileTap={{ scale: 0.97 }}
+                        onClick={() => navigate('/guide')}
+                        style={{
+                            padding: '0.65rem 1rem',
+                            background: 'rgba(209, 1, 1, 0.12)',
+                            border: '1px solid rgba(127, 1, 1, 0.35)',
+                            borderRadius: '10px',
+                            color: '#ff0000',
+                            fontSize: '0.85rem',
+                            fontWeight: 700,
+                            cursor: 'pointer',
+                        }}
+                    >
+                        How to join and create challenges
+                    </motion.button>
+                </div>
                 <div style={{ display: 'flex', gap: '1.5rem', marginTop: '1.5rem' }}>
                     <div>
                         <div style={{ color: '#ef4444', fontSize: '1.5rem', fontWeight: 700 }}>{allChallenges.length}</div>

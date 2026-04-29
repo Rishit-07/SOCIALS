@@ -11,6 +11,7 @@ const CreateChallenge = () => {
     const [title, setTitle] = useState('');
     const [description, setDescription] = useState('');
     const [duration, setDuration] = useState(7);
+    const [customDuration, setCustomDuration] = useState('');
     const [category, setCategory] = useState('');
     const [startDate, setStartDate] = useState('');
     const [isPublic, setIsPublic] = useState(true);
@@ -230,13 +231,13 @@ const CreateChallenge = () => {
                                     <button
                                         key={d}
                                         type="button"
-                                        onClick={() => setDuration(d)}
+                                        onClick={() => { setDuration(d); setCustomDuration(''); }}
                                         style={{
                                             flex: 1,
                                             padding: '0.65rem',
                                             borderRadius: '8px',
-                                            border: duration === d ? '1px solid #ef4444' : '1px solid rgba(255,255,255,0.1)',
-                                            background: duration === d ? 'rgba(239,68,68,0.12)' : 'transparent',
+                                            border: duration === d && customDuration === '' ? '1px solid #ef4444' : '1px solid rgba(255,255,255,0.1)',
+                                            background: duration === d && customDuration === '' ? 'rgba(239,68,68,0.12)' : 'transparent',
                                             color: '#fff',
                                             cursor: 'pointer',
                                         }}
@@ -244,6 +245,26 @@ const CreateChallenge = () => {
                                         {d}d
                                     </button>
                                 ))}
+                            </div>
+
+                            <div style={{ marginTop: '0.6rem', display: 'flex', gap: '0.5rem' }}>
+                                <input
+                                    type="number"
+                                    min={1}
+                                    max={3650}
+                                    value={customDuration}
+                                    onChange={e => {
+                                        const v = e.target.value.replace(/[^0-9]/g, '');
+                                        setCustomDuration(v);
+                                        const n = Number(v) || 0;
+                                        if (n > 0) setDuration(n);
+                                    }}
+                                    placeholder="Custom days"
+                                    style={{ ...inputStyle, width: '100%', padding: '0.6rem', fontSize: '0.9rem' }}
+                                />
+                                <div style={{ alignSelf: 'center', color: 'rgba(255,255,255,0.5)', fontSize: '0.85rem' }}>
+                                    days
+                                </div>
                             </div>
                         </div>
 

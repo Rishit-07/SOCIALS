@@ -1,6 +1,8 @@
 const Challenge = require("../models/challenge");
 const Participant = require("../models/participant");
+const User = require("../models/user");
 const crypto = require("crypto");
+const { createJoinNotification } = require("./notificationController");
 
 const normalizeDate = (value) => {
     const date = new Date(value);
@@ -42,13 +44,15 @@ const withComputedStatus = (challengeDoc) => {
 const createChallenge = async (req, res) => {
     try {
         const { title, description, duration, category, startDate, isPublic } = req.body;
+        // Ensure duration is a positive integer (days)
+        const durationDays = Math.max(1, parseInt(duration, 10) || 1);
         const crypto = require("crypto");
         const inviteCode = crypto.randomBytes(3).toString("hex").toUpperCase();
 
         const newChallenge = new Challenge({
             title,
             description,
-            duration,
+            duration: durationDays,
             category,
             startDate,
             isPublic,
@@ -100,6 +104,53 @@ const joinChallenge = async (req, res) => {
             status: challenge.isPublic ? "approved" : "pending",
         });
         await newParticipant.save();
+
+        if (newParticipant.status === "approved") {
+            const joiningUser = await User.findById(req.user.id).select("name");
+            const joinedUserName = joiningUser?.name || "A new user";
+
+            const challengeParticipants = await Participant.find({
+                challenge: challenge._id,
+                status: "approved",
+            })
+                .populate("user", "name");
+
+            const recipientIds = new Set();
+
+            if (challenge.createdBy) {
+                recipientIds.add(String(challenge.createdBy));
+            }
+
+            for (const participant of challengeParticipants) {
+                const participantUserId = String(participant.user?._id || participant.user || "");
+                if (participantUserId) {
+                    recipientIds.add(participantUserId);
+                }
+            }
+
+            recipientIds.delete(String(req.user.id));
+
+            const recipientPromises = Array.from(recipientIds).map((userId) =>
+                createJoinNotification({
+                    userId,
+                    challengeId: challenge._id,
+                    challengeTitle: challenge.title,
+                    joinedUserName,
+                })
+            );
+
+            await Promise.all(recipientPromises);
+
+            const io = req.app.locals.io;
+            if (io) {
+                io.to(String(challenge._id)).emit("new-member-joined", {
+                    challengeId: String(challenge._id),
+                    challengeTitle: challenge.title,
+                    joinedUserName,
+                    userId: String(req.user.id),
+                });
+            }
+        }
 
         return res.status(200).json({
             message: challenge.isPublic

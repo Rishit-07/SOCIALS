@@ -14,6 +14,7 @@ import DockHint from "./components/DockHint";
 import Community from './pages/Community';
 import EditProfile from './pages/EditProfile';
 import About from './pages/About';
+import Guide from './pages/Guide';
 import Notifications from './pages/Notifications';
 import Privacy from './pages/Privacy';
 import Terms from './pages/Terms';
@@ -63,6 +64,9 @@ const AppContent = () => {
         } />
 
       <Route path="/about" element={<About />} />
+      <Route path="/guide" element={
+          <ProtectedRoute><Guide /></ProtectedRoute>
+      } />
       <Route path="/privacy" element={<Privacy />} />
       <Route path="/terms" element={<Terms />} />
       </Routes>

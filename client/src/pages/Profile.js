@@ -52,14 +52,34 @@ const Profile = () => {
             ]);
             setRewards(rewardsRes.data);
             setStats(statsRes.data);
-            const mine = challengesRes.data.filter(c =>
-                c.createdBy && (
-                    String(c.createdBy) === String(user?.id) ||
-                    String(c.createdBy) === String(user?._id) ||
-                    String(c.createdBy?._id) === String(user?.id) ||
-                    String(c.createdBy?._id) === String(user?._id)
+
+            const allChallenges = challengesRes.data;
+            const currentUserId = String(user?.id || user?._id || '');
+
+            if (!currentUserId) {
+                setChallenges([]);
+                return;
+            }
+
+            const participantLists = await Promise.all(
+                allChallenges.map((challenge) =>
+                    API.get(`/api/participants/${challenge._id}`)
+                        .then((res) => res.data)
+                        .catch(() => [])
                 )
             );
+
+            const mine = allChallenges.filter((challenge, index) => {
+                const creatorId = String(challenge.createdBy?._id || challenge.createdBy || '');
+                const isCreator = creatorId === currentUserId;
+                const isApprovedParticipant = participantLists[index].some((participant) => {
+                    const participantUserId = String(participant.user?._id || participant.user || '');
+                    return participantUserId === currentUserId && participant.status === 'approved';
+                });
+
+                return isCreator || isApprovedParticipant;
+            });
+
             setChallenges(mine);
         } catch (err) {
             console.error(err);
@@ -751,7 +771,7 @@ const Profile = () => {
                         <div style={{ textAlign: 'center', padding: '2rem' }}>
                             <div style={{ fontSize: '2rem', marginBottom: '0.5rem' }}>📋</div>
                             <p style={{ color: 'rgba(255,255,255,0.3)', fontSize: '0.85rem' }}>
-                                You haven't created any challenges yet.
+                                You haven't joined any challenges yet.
                             </p>
                         </div>
                     ) : (

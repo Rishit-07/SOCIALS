@@ -126,4 +126,18 @@ const createCheckinNotification = async (userId, challengeId, challengeTitle) =>
     }
 };
 
-module.exports = { getNotifications, markAsRead, markAllAsRead, createCheckinNotification };
+const createJoinNotification = async ({ userId, challengeId, challengeTitle, joinedUserName }) => {
+    try {
+        await Notification.create({
+            user: userId,
+            type: "joined",
+            title: "🎉 New member joined!",
+            message: `${joinedUserName} joined "${challengeTitle}".`,
+            challenge: challengeId,
+        });
+    } catch (err) {
+        console.error(err);
+    }
+};
+
+module.exports = { getNotifications, markAsRead, markAllAsRead, createCheckinNotification, createJoinNotification };
