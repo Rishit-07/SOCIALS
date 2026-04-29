@@ -1,0 +1,140 @@
+.app-footer {
+  position: fixed;
+  left: 50%;
+  translate: -50% 0;
+  bottom: calc(14px + env(safe-area-inset-bottom, 0px));
+  width: min(780px, calc(100% - 1.5rem));
+  z-index: 70;
+  box-sizing: border-box;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 12px;
+  background: linear-gradient(rgba(255, 255, 255, 0.08), rgba(255, 255, 255, 0.02));
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.25);
+  padding: 0.6rem 0.9rem;
+}
+
+.app-footer-authenticated {
+  bottom: calc(96px + env(safe-area-inset-bottom, 0px));
+}
+
+.app-footer-inner {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+  align-items: center;
+  width: 100%;
+  gap: 0.8rem;
+}
+
+.app-footer-tagline,
+.app-footer-copyright {
+  margin: 0;
+  color: rgba(255, 255, 255, 0.72);
+  font-size: 0.78rem;
+  letter-spacing: 0.2px;
+}
+
+.app-footer-tagline {
+  justify-self: start;
+  text-align: left;
+}
+
+.app-footer-tagline span {
+  font-family: "Fjalla One", sans-serif;
+  font-size: 0.9rem;
+}
+
+.app-footer-copyright {
+  justify-self: center;
+  text-align: center;
+  white-space: nowrap;
+}
+
+.app-footer-copyright span {
+  font-size: 0.9rem;
+}
+
+.app-footer-nav {
+  display: flex;
+  gap: 0.7rem;
+  align-items: center;
+  justify-self: end;
+}
+
+.app-footer-link-shell {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.app-footer-link {
+  color: #ef4444;
+  font-size: 0.78rem;
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.app-footer-link-underline {
+  height: 1.5px;
+  margin-top: 2px;
+  border-radius: 999px;
+  background: #ef4444;
+}
+
+.app-footer-divider {
+  color: rgba(255, 255, 255, 0.25);
+  font-size: 0.75rem;
+}
+
+@media (max-width: 768px) {
+  .app-footer {
+    width: min(420px, calc(100% - 2rem));
+    padding: 0.55rem 0.75rem;
+  }
+
+  .app-footer-authenticated {
+    bottom: calc(104px + env(safe-area-inset-bottom, 0px));
+  }
+
+  .app-footer-inner {
+    grid-template-columns: 1fr auto;
+    gap: 0.45rem 0.65rem;
+  }
+
+  .app-footer-tagline {
+    grid-column: 1 / -1;
+    justify-self: center;
+    text-align: center;
+  }
+
+  .app-footer-tagline span,
+  .app-footer-copyright span {
+    font-size: 0.82rem;
+  }
+
+  .app-footer-copyright {
+    justify-self: start;
+  }
+
+  .app-footer-nav {
+    gap: 0.55rem;
+    justify-self: end;
+  }
+}
+
+@media (max-width: 420px) {
+  .app-footer {
+    width: calc(100% - 1rem);
+    padding: 0.5rem 0.65rem;
+  }
+
+  .app-footer-tagline span,
+  .app-footer-copyright span {
+    font-size: 0.76rem;
+  }
+
+  .app-footer-link {
+    font-size: 0.74rem;
+  }
+}
