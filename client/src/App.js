@@ -19,6 +19,7 @@ import Notifications from './pages/Notifications';
 import Privacy from './pages/Privacy';
 import Terms from './pages/Terms';
 import AppFooter from './components/AppFooter';
+import { Analytics } from '@vercel/analytics/react';
 
 const ProtectedRoute = ({ children }) => {
   const { user } = useContext(AuthContext);
@@ -85,6 +86,7 @@ const App = () => {
     <AuthProvider>
       <DockProvider>
         <AppContent />
+        <Analytics />
       </DockProvider>
     </AuthProvider>
   );
