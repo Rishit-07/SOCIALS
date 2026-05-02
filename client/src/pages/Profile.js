@@ -628,15 +628,18 @@ const Profile = () => {
                                 exit={{ opacity: 0, scale: 0.8, y: 30 }}
                                 transition={{ type: 'spring', stiffness: 300, damping: 28 }}
                                 style={{
-                                    position: 'relative',
+                                    position: 'fixed',
                                     top: '50%', left: '50%',
-                                    transform: 'translate(-50%, -50%)',
+                                    translate: '-50% -50%',
                                     background: 'linear-gradient(145deg, #1a1020, #0f1419)',
                                     border: `1px solid ${selectedBadge.border}`,
                                     borderRadius: '24px',
-                                    padding: '2.5rem',
+                                    padding: 'clamp(1.25rem, 5vw, 2.5rem)',
                                     zIndex: 41,
-                                    width: 'min(400px, 90%)',
+                                    width: 'min(400px, calc(100vw - 2rem))',
+                                    maxHeight: 'calc(100dvh - 2rem)',
+                                    overflowY: 'auto',
+                                    boxSizing: 'border-box',
                                     textAlign: 'center',
                                     boxShadow: `0 30px 80px rgba(0,0,0,0.6), 0 0 40px ${selectedBadge.bg}`,
                                 }}

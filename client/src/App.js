@@ -1,5 +1,5 @@
 import { useContext } from "react";
-import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate, useLocation } from "react-router-dom";
 import AuthProvider, { AuthContext } from "./context/AuthContext";
 import { DockProvider } from "./context/DockContext";
 import Landing from "./pages/Landing";
@@ -28,6 +28,7 @@ const ProtectedRoute = ({ children }) => {
 
 const AppContent = () => {
   const { user } = useContext(AuthContext);
+  const location = useLocation();
 
   return (
     <BrowserRouter>
@@ -71,6 +72,10 @@ const AppContent = () => {
       <Route path="/privacy" element={<Privacy />} />
       <Route path="/terms" element={<Terms />} />
       </Routes>
+      {/* Render the User Guide outside the Dashboard content but above the footer */}
+      {location?.pathname === '/dashboard' ? (
+        <ProtectedRoute><Guide /></ProtectedRoute>
+      ) : null}
       <AppFooter isAuthenticated={!!user} />
       {user && (
         <>
