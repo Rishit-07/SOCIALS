@@ -135,6 +135,22 @@ const ChallengeDetail = () => {
         setCheckingIn(true);
         setCheckinError('');
         setCheckinSuccess('');
+        // Prevent check-in before challenge start date
+        try {
+            const start = challenge?.startDate ? new Date(challenge.startDate) : null;
+            if (start) {
+                start.setHours(0, 0, 0, 0);
+                const todayCheck = new Date();
+                todayCheck.setHours(0, 0, 0, 0);
+                if (todayCheck < start) {
+                    alert('Challenge not started yet');
+                    setCheckingIn(false);
+                    return;
+                }
+            }
+        } catch (err) {
+            // ignore date parsing issues and continue
+        }
         try {
             await API.post('/api/checkins', { challengeId: id, note: checkinNote });
             setCheckinSuccess('Checked in successfully!');
@@ -194,20 +210,48 @@ const ChallengeDetail = () => {
     if (currentUserJoinDate) {
         currentUserJoinDate.setHours(0, 0, 0, 0);
     }
-    const currentUserTimelineDays = challenge
-        ? Array.from({ length: challenge.duration }, (_, i) => {
-            const date = new Date(challenge.startDate);
-            date.setHours(0, 0, 0, 0);
-            date.setDate(date.getDate() + i);
-            return !currentUserJoinDate || date >= currentUserJoinDate;
-        }).filter(Boolean).length
-        : 0;
+
+    // Normalize challenge start/end and today's date for comparisons
+    const challengeStartDate = challenge && challenge.startDate ? new Date(challenge.startDate) : null;
+    if (challengeStartDate) challengeStartDate.setHours(0, 0, 0, 0);
+    const challengeEndDate = challengeStartDate ? new Date(challengeStartDate) : null;
+    if (challengeEndDate) challengeEndDate.setDate(challengeEndDate.getDate() + (challenge.duration - 1));
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    // If today is before the challenge start, mark as pre-start
+    const isPreStart = challengeStartDate && today < challengeStartDate;
+
+    // Effective start for this user: max(challengeStartDate, userJoinDate)
+    let effectiveStart = challengeStartDate ? new Date(challengeStartDate) : null;
+    if (currentUserJoinDate && (!effectiveStart || currentUserJoinDate > effectiveStart)) {
+        effectiveStart = new Date(currentUserJoinDate);
+    }
+
+    // Effective end is min(challengeEndDate, today)
+    let effectiveEnd = challengeEndDate ? new Date(challengeEndDate) : null;
+    if (effectiveEnd && today < effectiveEnd) {
+        effectiveEnd = new Date(today);
+    }
+
+    // If effectiveEnd is before effectiveStart, the timeline is 0 (e.g., before start)
+    let currentUserTimelineDays = 0;
+    if (effectiveStart && effectiveEnd && effectiveEnd >= effectiveStart) {
+        const diffMs = effectiveEnd.getTime() - effectiveStart.getTime();
+        currentUserTimelineDays = Math.floor(diffMs / (1000 * 60 * 60 * 24)) + 1; // inclusive days
+    }
+
+    // Count checkins that fall on or after effectiveStart and on or before effectiveEnd
     const currentUserProgressCount = currentUserCheckins.filter((checkin) => {
-        if (!currentUserJoinDate) return true;
+        if (!effectiveStart) return false;
         const checkinDate = new Date(checkin.createdAt);
         checkinDate.setHours(0, 0, 0, 0);
-        return checkinDate >= currentUserJoinDate;
+        if (effectiveEnd) {
+            return checkinDate >= effectiveStart && checkinDate <= effectiveEnd;
+        }
+        return checkinDate >= effectiveStart;
     }).length;
+
     const currentUserProgressPercent = currentUserTimelineDays
         ? Math.min(100, Math.round((currentUserProgressCount / currentUserTimelineDays) * 100))
         : 0;
@@ -367,7 +411,8 @@ const ChallengeDetail = () => {
                                         type="text"
                                         value={checkinNote}
                                         onChange={e => setCheckinNote(e.target.value)}
-                                        placeholder="Add a note (optional)"
+                                        placeholder={isPreStart ? 'Challenge not started yet' : 'Add a note (optional)'}
+                                        disabled={isPreStart}
                                         style={{
                                             width: '100%',
                                             padding: '0.75rem 1rem',
@@ -387,7 +432,7 @@ const ChallengeDetail = () => {
                                         whileHover={{ scale: 1.02 }}
                                         whileTap={{ scale: 0.98 }}
                                         type="submit"
-                                        disabled={checkingIn}
+                                        disabled={checkingIn || isPreStart}
                                         style={{
                                             width: '100%',
                                             padding: '0.85rem',
@@ -397,10 +442,10 @@ const ChallengeDetail = () => {
                                             color: '#fff',
                                             fontSize: '0.95rem',
                                             fontWeight: 600,
-                                            cursor: checkingIn ? 'not-allowed' : 'pointer',
+                                            cursor: checkingIn || isPreStart ? 'not-allowed' : 'pointer',
                                         }}
                                     >
-                                        {checkingIn ? 'Checking in...' : '✅ Check in for today'}
+                                        {isPreStart ? 'Challenge not started' : (checkingIn ? 'Checking in...' : '✅ Check in for today')}
                                     </motion.button>
                                 </form>
                                 {checkinSuccess && <p style={{ color: '#22c55e', fontSize: '0.85rem', marginTop: '0.5rem' }}>{checkinSuccess}</p>}
