@@ -72,10 +72,9 @@ const AppContent = () => {
       <Route path="/privacy" element={<Privacy />} />
       <Route path="/terms" element={<Terms />} />
       </Routes>
-      {/* Render the User Guide outside the Dashboard content but above the footer */}
-      {location?.pathname === '/dashboard' ? (
-        <ProtectedRoute><Guide /></ProtectedRoute>
-      ) : null}
+      {/* The User Guide is available at the /guide route and should only open
+          when the user navigates to it (e.g. clicking the dashboard button).
+          Do not auto-render it on the dashboard. */}
       <AppFooter isAuthenticated={!!user} />
       {user && (
         <>
