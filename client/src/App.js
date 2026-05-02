@@ -31,7 +31,7 @@ const AppContent = () => {
   const location = useLocation();
 
   return (
-    <BrowserRouter>
+    <>
       <Routes>
         <Route
           path="/"
@@ -83,17 +83,19 @@ const AppContent = () => {
           <DockHint />
         </>
       )}
-    </BrowserRouter>
+    </>
   );
 };
 const App = () => {
   return (
-    <AuthProvider>
-      <DockProvider>
-        <AppContent />
-        <Analytics />
-      </DockProvider>
-    </AuthProvider>
+    <BrowserRouter>
+      <AuthProvider>
+        <DockProvider>
+          <AppContent />
+          <Analytics />
+        </DockProvider>
+      </AuthProvider>
+    </BrowserRouter>
   );
 };
 
